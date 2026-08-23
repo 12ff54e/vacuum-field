@@ -58,6 +58,12 @@ class SurfaceGeometryOperator {
     const T* zuv() const { return zuv_.data(); }
     const T* zvv() const { return zvv_.data(); }
 
+    // [nfp] / [nZeta] — field-period and grid toroidal-angle trig tables.
+    const T* cosPer() const { return cos_per_.data(); }
+    const T* sinPer() const { return sin_per_.data(); }
+    const T* cosPhi() const { return cos_phi_.data(); }
+    const T* sinPhi() const { return sin_phi_.data(); }
+
     const T* snr() const { return snr_.data(); }
     const T* snv() const { return snv_.data(); }
     const T* snz() const { return snz_.data(); }

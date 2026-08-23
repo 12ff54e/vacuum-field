@@ -43,10 +43,32 @@ function(vfield_link_netcdf target)
     target_sources(${target} PRIVATE
       ${PROJECT_SOURCE_DIR}/src/vfield/mgrid_provider.cpp)
     target_compile_definitions(${target} PUBLIC VFIELD_HAVE_NETCDF)
+    # Debian's netCDF package defines the imported target with a lowercase
+    # spelling; accept both. Whichever target is used, its interface include
+    # dirs resolve to the system prefix (/usr/include), which CMake turns
+    # into -isystem /usr/include and breaks libstdc++'s #include_next in
+    # every consuming TU. The system include path is a compiler default
+    # anyway, so filter it out of the imported target.
+    set(netcdf_target "")
     if(TARGET netCDF::netCDF)
-      target_link_libraries(${target} PUBLIC netCDF::netCDF)
+      set(netcdf_target netCDF::netCDF)
+    elseif(TARGET netCDF::netcdf)
+      set(netcdf_target netCDF::netcdf)
     elseif(TARGET PkgConfig::netcdf)
-      target_link_libraries(${target} PUBLIC PkgConfig::netcdf)
+      set(netcdf_target PkgConfig::netcdf)
+    endif()
+    if(netcdf_target)
+      get_target_property(netcdf_iface_incs ${netcdf_target}
+                          INTERFACE_INCLUDE_DIRECTORIES)
+      set(netcdf_filtered_incs "")
+      foreach(inc IN LISTS netcdf_iface_incs)
+        if(NOT inc STREQUAL "/usr/include")
+          list(APPEND netcdf_filtered_incs ${inc})
+        endif()
+      endforeach()
+      set_property(TARGET ${netcdf_target} PROPERTY
+                   INTERFACE_INCLUDE_DIRECTORIES "${netcdf_filtered_incs}")
+      target_link_libraries(${target} PUBLIC ${netcdf_target})
     else()
       target_link_libraries(${target} PUBLIC ${netCDF_LIBRARIES})
       target_include_directories(${target} PUBLIC ${netCDF_INCLUDE_DIRS})

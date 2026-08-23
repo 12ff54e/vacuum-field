@@ -37,3 +37,14 @@ target_link_libraries(test_surface_geometry_golden PRIVATE
   vfield_host vfield_cuda_double)
 vfield_enable_warnings(test_surface_geometry_golden)
 vfield_add_test(test_surface_geometry_golden unit;golden)
+
+if(VFIELD_HAVE_NETCDF)
+  add_executable(test_external_field_golden test_external_field_golden.cu)
+  target_include_directories(test_external_field_golden PRIVATE
+    ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+    ${PROJECT_SOURCE_DIR}/tests/support)
+  target_link_libraries(test_external_field_golden PRIVATE
+    vfield_host vfield_cuda_double)
+  vfield_enable_warnings(test_external_field_golden)
+  vfield_add_test(test_external_field_golden unit;golden)
+endif()

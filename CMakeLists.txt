@@ -92,5 +92,7 @@ endif()
 # ---- tests ------------------------------------------------------------------
 if(VFIELD_BUILD_TESTS)
   enable_testing()
-  add_subdirectory(tests)
+  # The explicit binary dir keeps the library's test build tree distinct from
+  # an embedding consumer's own tests/ subdirectory.
+  add_subdirectory(tests vacuum-field-tests)
 endif()

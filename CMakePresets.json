@@ -1,0 +1,59 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "verify-double",
+      "displayName": "Verify double (default)",
+      "description": "The verification configuration: double precision, -Werror, Release.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VFIELD_USE_FLOAT": "OFF",
+        "VFIELD_USE_NETCDF": "ON",
+        "VFIELD_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "float",
+      "displayName": "Float (experimental)",
+      "description": "Float instantiation (VFIELD_USE_FLOAT=ON). The host dense solve stays double.",
+      "inherits": "verify-double",
+      "binaryDir": "${sourceDir}/build-float",
+      "cacheVariables": {
+        "VFIELD_USE_FLOAT": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "verify-double",
+      "configurePreset": "verify-double"
+    },
+    {
+      "name": "float",
+      "configurePreset": "float"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "verify-double",
+      "configurePreset": "verify-double",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "float",
+      "configurePreset": "float",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

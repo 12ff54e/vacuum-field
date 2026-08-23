@@ -1,0 +1,62 @@
+# Hosted CPU-only CI. No self-hosted GPU runner is required:
+#   - the CUDA toolkit is installed at build time (the pinned Jimver/cuda-toolkit
+#     action), so both scalar libraries and all tests compile;
+#   - only the `host`-labelled tests (which never launch kernels) run — the
+#     GPU/golden gates remain local/manual, like in cuMES.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-double:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: CUDA toolkit (build only; no GPU needed)
+        uses: Jimver/cuda-toolkit@3d45d157f327c09c04b50ee6ccdea2d9d017ec76 # v0.2.35
+        with:
+          cuda: '12.1.1'
+          method: network
+          sub-packages: '["nvcc", "cudart-dev"]'
+
+      - name: NetCDF development library
+        run: sudo apt-get update && sudo apt-get install -y libnetcdf-dev
+
+      - name: Configure (verify-double)
+        run: cmake --preset verify-double
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Host-only tests
+        run: ctest --test-dir build --output-on-failure -L host
+
+  build-float:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: CUDA toolkit (build only; no GPU needed)
+        uses: Jimver/cuda-toolkit@3d45d157f327c09c04b50ee6ccdea2d9d017ec76 # v0.2.35
+        with:
+          cuda: '12.1.1'
+          method: network
+          sub-packages: '["nvcc", "cudart-dev"]'
+
+      - name: NetCDF development library
+        run: sudo apt-get update && sudo apt-get install -y libnetcdf-dev
+
+      - name: Configure (float)
+        run: cmake --preset float
+
+      - name: Build
+        run: cmake --build build-float -j
+
+      - name: Host-only tests
+        run: ctest --test-dir build-float --output-on-failure -L host

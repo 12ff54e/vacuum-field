@@ -18,6 +18,13 @@ target_link_libraries(test_fourier_basis PRIVATE vfield_host)
 vfield_enable_warnings(test_fourier_basis)
 vfield_add_test(test_fourier_basis host)
 
+add_executable(test_singular_coefficients test_singular_coefficients.cpp)
+target_include_directories(test_singular_coefficients PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include)
+target_link_libraries(test_singular_coefficients PRIVATE vfield_host)
+vfield_enable_warnings(test_singular_coefficients)
+vfield_add_test(test_singular_coefficients host)
+
 # Device tests: link both scalar libraries; the support headers live in
 # tests/support.
 add_executable(test_surface_geometry test_surface_geometry.cu)
@@ -48,3 +55,21 @@ if(VFIELD_HAVE_NETCDF)
   vfield_enable_warnings(test_external_field_golden)
   vfield_add_test(test_external_field_golden unit;golden)
 endif()
+
+add_executable(test_singular_integrals test_singular_integrals.cu)
+target_include_directories(test_singular_integrals PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_singular_integrals PRIVATE
+  vfield_host vfield_cuda_double vfield_cuda_float)
+vfield_enable_warnings(test_singular_integrals)
+vfield_add_test(test_singular_integrals unit)
+
+add_executable(test_singular_golden test_singular_golden.cu)
+target_include_directories(test_singular_golden PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_singular_golden PRIVATE
+  vfield_host vfield_cuda_double)
+vfield_enable_warnings(test_singular_golden)
+vfield_add_test(test_singular_golden unit;golden)

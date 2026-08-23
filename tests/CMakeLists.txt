@@ -91,3 +91,28 @@ target_link_libraries(test_regularized_golden PRIVATE
   vfield_host vfield_cuda_double)
 vfield_enable_warnings(test_regularized_golden)
 vfield_add_test(test_regularized_golden unit;golden)
+
+add_executable(test_lu test_lu.cpp)
+target_include_directories(test_lu PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include)
+target_link_libraries(test_lu PRIVATE vfield_host)
+vfield_enable_warnings(test_lu)
+vfield_add_test(test_lu host)
+
+add_executable(test_laplace_solver test_laplace_solver.cu)
+target_include_directories(test_laplace_solver PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_laplace_solver PRIVATE
+  vfield_host vfield_cuda_double vfield_cuda_float)
+vfield_enable_warnings(test_laplace_solver)
+vfield_add_test(test_laplace_solver unit)
+
+add_executable(test_laplace_golden test_laplace_golden.cu)
+target_include_directories(test_laplace_golden PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_laplace_golden PRIVATE
+  vfield_host vfield_cuda_double)
+vfield_enable_warnings(test_laplace_golden)
+vfield_add_test(test_laplace_golden unit;golden)

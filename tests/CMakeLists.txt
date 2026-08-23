@@ -73,3 +73,21 @@ target_link_libraries(test_singular_golden PRIVATE
   vfield_host vfield_cuda_double)
 vfield_enable_warnings(test_singular_golden)
 vfield_add_test(test_singular_golden unit;golden)
+
+add_executable(test_regularized_axisym test_regularized_axisym.cu)
+target_include_directories(test_regularized_axisym PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_regularized_axisym PRIVATE
+  vfield_host vfield_cuda_double vfield_cuda_float)
+vfield_enable_warnings(test_regularized_axisym)
+vfield_add_test(test_regularized_axisym unit)
+
+add_executable(test_regularized_golden test_regularized_golden.cu)
+target_include_directories(test_regularized_golden PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_regularized_golden PRIVATE
+  vfield_host vfield_cuda_double)
+vfield_enable_warnings(test_regularized_golden)
+vfield_add_test(test_regularized_golden unit;golden)

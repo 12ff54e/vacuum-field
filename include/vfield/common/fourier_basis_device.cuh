@@ -17,33 +17,22 @@ namespace vfield {
 template <class T>
 class FourierBasisDevice {
    public:
-    // Uploads the whole host basis. Called once at solver construction.
+    // Uploads the whole host basis. Called once at solver construction. The
+    // host tables are double; convert to T explicitly — a raw cudaMemcpy
+    // would reinterpret the doubles in float builds.
     explicit FourierBasisDevice(const FourierBasis& fb) {
-        mscale_.allocate(fb.mscale.size());
-        nscale_.allocate(fb.nscale.size());
-        cosmu_.allocate(fb.cosmu.size());
-        sinmu_.allocate(fb.sinmu.size());
-        cosmum_.allocate(fb.cosmum.size());
-        sinmum_.allocate(fb.sinmum.size());
-        cosmui_.allocate(fb.cosmui.size());
-        sinmui_.allocate(fb.sinmui.size());
-        cosnv_.allocate(fb.cosnv.size());
-        sinnv_.allocate(fb.sinnv.size());
-        cosnvn_.allocate(fb.cosnvn.size());
-        sinnvn_.allocate(fb.sinnvn.size());
-
-        mscale_.upload(fb.mscale.data(), fb.mscale.size());
-        nscale_.upload(fb.nscale.data(), fb.nscale.size());
-        cosmu_.upload(fb.cosmu.data(), fb.cosmu.size());
-        sinmu_.upload(fb.sinmu.data(), fb.sinmu.size());
-        cosmum_.upload(fb.cosmum.data(), fb.cosmum.size());
-        sinmum_.upload(fb.sinmum.data(), fb.sinmum.size());
-        cosmui_.upload(fb.cosmui.data(), fb.cosmui.size());
-        sinmui_.upload(fb.sinmui.data(), fb.sinmui.size());
-        cosnv_.upload(fb.cosnv.data(), fb.cosnv.size());
-        sinnv_.upload(fb.sinnv.data(), fb.sinnv.size());
-        cosnvn_.upload(fb.cosnvn.data(), fb.cosnvn.size());
-        sinnvn_.upload(fb.sinnvn.data(), fb.sinnvn.size());
+        uploadTable(fb.mscale, &mscale_);
+        uploadTable(fb.nscale, &nscale_);
+        uploadTable(fb.cosmu, &cosmu_);
+        uploadTable(fb.sinmu, &sinmu_);
+        uploadTable(fb.cosmum, &cosmum_);
+        uploadTable(fb.sinmum, &sinmum_);
+        uploadTable(fb.cosmui, &cosmui_);
+        uploadTable(fb.sinmui, &sinmui_);
+        uploadTable(fb.cosnv, &cosnv_);
+        uploadTable(fb.sinnv, &sinnv_);
+        uploadTable(fb.cosnvn, &cosnvn_);
+        uploadTable(fb.sinnvn, &sinnvn_);
     }
 
     const T* mscale() const { return mscale_.data(); }
@@ -60,6 +49,16 @@ class FourierBasisDevice {
     const T* sinnvn() const { return sinnvn_.data(); }
 
    private:
+    static void uploadTable(const std::vector<double>& src,
+                            DeviceBuffer<T>* dst) {
+        std::vector<T> converted(src.size());
+        for (std::size_t i = 0; i < src.size(); ++i) {
+            converted[i] = static_cast<T>(src[i]);
+        }
+        dst->allocate(src.size());
+        dst->upload(converted.data(), converted.size());
+    }
+
     DeviceBuffer<T> mscale_;
     DeviceBuffer<T> nscale_;
     DeviceBuffer<T> cosmu_;

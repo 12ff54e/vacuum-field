@@ -41,7 +41,8 @@ set(CMAKE_CUDA_EXTENSIONS OFF)
 # host dense solve. Plain C++ — compiled by the host compiler, no device code.
 add_library(vfield_host STATIC
   src/vfield/sizes.cpp
-  src/vfield/fourier_basis.cpp)
+  src/vfield/fourier_basis.cpp
+  src/vfield/json_parser.cpp)
 target_include_directories(vfield_host PUBLIC ${PROJECT_SOURCE_DIR}/include)
 vfield_enable_warnings(vfield_host)
 vfield_link_netcdf(vfield_host)

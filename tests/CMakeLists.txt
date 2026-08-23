@@ -17,3 +17,23 @@ target_include_directories(test_fourier_basis PRIVATE
 target_link_libraries(test_fourier_basis PRIVATE vfield_host)
 vfield_enable_warnings(test_fourier_basis)
 vfield_add_test(test_fourier_basis host)
+
+# Device tests: link both scalar libraries; the support headers live in
+# tests/support.
+add_executable(test_surface_geometry test_surface_geometry.cu)
+target_include_directories(test_surface_geometry PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_surface_geometry PRIVATE
+  vfield_host vfield_cuda_double vfield_cuda_float)
+vfield_enable_warnings(test_surface_geometry)
+vfield_add_test(test_surface_geometry unit)
+
+add_executable(test_surface_geometry_golden test_surface_geometry_golden.cu)
+target_include_directories(test_surface_geometry_golden PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_surface_geometry_golden PRIVATE
+  vfield_host vfield_cuda_double)
+vfield_enable_warnings(test_surface_geometry_golden)
+vfield_add_test(test_surface_geometry_golden unit;golden)

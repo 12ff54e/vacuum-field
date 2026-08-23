@@ -19,20 +19,35 @@ class FourierBasisDevice {
    public:
     // Uploads the whole host basis. Called once at solver construction. The
     // host tables are double; convert to T explicitly — a raw cudaMemcpy
-    // would reinterpret the doubles in float builds.
-    explicit FourierBasisDevice(const FourierBasis& fb) {
+    // would reinterpret the doubles in float builds. For lasym the poloidal
+    // tables are extended to the full [0, nThetaEven) range with the mirror
+    // parity (cos(m*(2pi-theta)) = cos(m*theta), sin -> -sin) so the
+    // full-range kernels can index them directly.
+    explicit FourierBasisDevice(const FourierBasis& fb,
+                                bool lasym,
+                                int n_theta_even) {
         uploadTable(fb.mscale, &mscale_);
         uploadTable(fb.nscale, &nscale_);
-        uploadTable(fb.cosmu, &cosmu_);
-        uploadTable(fb.sinmu, &sinmu_);
-        uploadTable(fb.cosmum, &cosmum_);
-        uploadTable(fb.sinmum, &sinmum_);
-        uploadTable(fb.cosmui, &cosmui_);
-        uploadTable(fb.sinmui, &sinmui_);
         uploadTable(fb.cosnv, &cosnv_);
         uploadTable(fb.sinnv, &sinnv_);
         uploadTable(fb.cosnvn, &cosnvn_);
         uploadTable(fb.sinnvn, &sinnvn_);
+
+        const int n_reduced =
+            static_cast<int>(fb.cosmu.size()) / (fb.sizes().mnyq2 + 1);
+        const int n_rows = lasym ? n_theta_even : n_reduced;
+        uploadTableExtended(fb.cosmu, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+                            /*odd=*/false, &cosmu_);
+        uploadTableExtended(fb.sinmu, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+                            /*odd=*/true, &sinmu_);
+        uploadTableExtended(fb.cosmum, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+                            /*odd=*/true, &cosmum_);
+        uploadTableExtended(fb.sinmum, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+                            /*odd=*/false, &sinmum_);
+        uploadTableExtended(fb.cosmui, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+                            /*odd=*/false, &cosmui_);
+        uploadTableExtended(fb.sinmui, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+                            /*odd=*/true, &sinmui_);
     }
 
     const T* mscale() const { return mscale_.data(); }
@@ -57,6 +72,34 @@ class FourierBasisDevice {
         }
         dst->allocate(src.size());
         dst->upload(converted.data(), converted.size());
+    }
+
+    // Uploads a poloidal table with an optional mirror extension into the
+    // second poloidal half [0, 2*pi[ (rows beyond n_reduced are the
+    // parity-signed copies of the reflected reduced rows; the self-reflecting
+    // endpoint rows are copied as-is, which the series parity guarantees is
+    // correct).
+    static void uploadTableExtended(const std::vector<double>& src,
+                                    int n_reduced,
+                                    int n_rows,
+                                    int num_m,
+                                    bool odd,
+                                    DeviceBuffer<T>* dst) {
+        std::vector<T> extended(n_rows * num_m);
+        for (int l = 0; l < n_rows; ++l) {
+            int l_src = l;
+            T sign = 1;
+            if (l >= n_reduced) {
+                l_src = (n_rows - l) % n_rows;
+                sign = odd ? T(-1) : T(1);
+            }
+            for (int m = 0; m < num_m; ++m) {
+                extended[l * num_m + m] =
+                    sign * static_cast<T>(src[l_src * num_m + m]);
+            }
+        }
+        dst->allocate(extended.size());
+        dst->upload(extended.data(), extended.size());
     }
 
     DeviceBuffer<T> mscale_;

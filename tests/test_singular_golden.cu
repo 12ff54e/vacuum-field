@@ -71,7 +71,7 @@ void runIteration(int iter) {
     mgrid.loadFile(kDataDir + "../mgrid_cth_like.nc",
                    std::vector<double>{4700.0, 1000.0});
 
-    FourierBasisDevice<double> fbd(fb);
+    FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<double> sg(sizes, fbd);
     ExternalFieldOperator<double> ef(sizes, sg, mgrid);
     SingularIntegralsOperator<double> si(sizes, fbd, sg);

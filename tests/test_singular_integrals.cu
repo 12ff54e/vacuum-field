@@ -141,7 +141,7 @@ void runResolution(int mpol,
 
     Sizes sizes(lasym, nfp, mpol, ntor, ntheta, nzeta);
     FourierBasis fb(sizes);
-    FourierBasisDevice<T> fbd(fb);
+    FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<T> sg(sizes, fbd);
     SingularIntegralsOperator<T> si(sizes, fbd, sg);
 

@@ -69,7 +69,7 @@ void runIteration(int iter) {
     fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                  sizes.mpol);
 
-    FourierBasisDevice<double> fbd(fb);
+    FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<double> sg(sizes, fbd);
     auto d_rcc = toDevice(rcc);
     auto d_rss = toDevice(rss);

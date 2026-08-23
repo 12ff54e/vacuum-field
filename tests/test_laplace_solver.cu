@@ -38,7 +38,7 @@ void runCase(bool lasym, int m0, int n0, double tol) {
 
     Sizes sizes(lasym, nfp, mpol, ntor, ntheta, nzeta);
     FourierBasis fb(sizes);
-    FourierBasisDevice<T> fbd(fb);
+    FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
     LaplaceSolverOperator<T> ls(sizes, fbd);
 
     const int nf = ntor;

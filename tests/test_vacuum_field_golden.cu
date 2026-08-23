@@ -1,0 +1,144 @@
+// test_vacuum_field_golden.cu — vac1n_bsqvac comparison (double).
+//
+// Golden gate, end to end: the VacuumFieldSolver driver runs the complete
+// NESTOR pipeline on the cth-like inputs and the outputs (potential
+// coefficients, potu/potv, bsubu/bsubv, bsqvac, brv/bphiv/bzv) are compared
+// elementwise against the Fortran-VMEC vac1n_bsqvac dumps at 1e-10 (vmecpp's
+// own tolerance). The solver state is carried across iterations 53 (full
+// update) and 54 (partial update with the stale Laplace factor), exactly
+// like vmecpp's single-Vmec flow.
+#include "golden_data.hpp"
+#include "vfield/common/fourier_basis.hpp"
+#include "vfield/common/sizes.hpp"
+#include "vfield/free_boundary/vacuum_field_solver.hpp"
+
+#include <iomanip>
+#include <numbers>
+#include <sstream>
+#include <string>
+
+using vfield::FourierBasis;
+using vfield::Sizes;
+using vfield::VacuumFieldSolver;
+using vfield::test::check;
+using vfield::test::compareZetaFast;
+using vfield::test::flatArray;
+using vfield::test::is_close_rel_abs;
+using vfield::test::loadGolden;
+using vfield::test::nestedArray;
+using vfield::test::summary;
+using vfield::test::toDevice;
+using vfield::test::toHost;
+
+namespace {
+
+const std::string kDataDir = "tests/data/cth_like_free_bdy/";
+
+std::string jsonPath(const std::string& checkpoint, int iter) {
+    std::ostringstream oss;
+    oss << kDataDir << checkpoint << "/" << checkpoint << "_00015_"
+        << std::setw(6) << std::setfill('0') << iter
+        << "_01.cth_like_free_bdy.json";
+    return oss.str();
+}
+
+void runIteration(int iter,
+                  VacuumFieldSolver<double>& solver,
+                  const Sizes& sizes) {
+    const json::Value vacuum = loadGolden(jsonPath("vac1n_vacuum", iter));
+    const json::Value bsqvac = loadGolden(jsonPath("vac1n_bsqvac", iter));
+
+    const bool full_update =
+        (static_cast<double>(vacuum.at("ivac_skip")) == 0.0);
+    const int sign_j =
+        static_cast<int>(static_cast<double>(vacuum.at("signgs")));
+
+    FourierBasis fb(sizes);
+    std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
+    fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+                 sizes.mpol);
+    std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
+    fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+                 sizes.mpol);
+
+    auto d_rcc = toDevice(rcc);
+    auto d_rss = toDevice(rss);
+    auto d_zsc = toDevice(zsc);
+    auto d_zcs = toDevice(zcs);
+    auto d_raxis = toDevice(flatArray(vacuum.at("raxis_nestor")));
+    auto d_zaxis = toDevice(flatArray(vacuum.at("zaxis_nestor")));
+
+    const double net_toroidal_current =
+        static_cast<double>(vacuum.at("plascur")) /
+        (4.0 * std::numbers::pi * 1.0e-7);
+
+    double bsubu_vac = 0.0, bsubv_vac = 0.0;
+    solver.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
+                  d_zcs.data(), nullptr, nullptr, sign_j, d_raxis.data(),
+                  d_zaxis.data(), &bsubu_vac, &bsubv_vac, net_toroidal_current,
+                  full_update);
+    (void)bsubu_vac;
+    (void)bsubv_vac;
+
+    const double tol = 1e-10;
+    const std::string iter_name = "iter " + std::to_string(iter);
+
+    // Potential coefficients (potsin, flat [mnpd]).
+    const int mnpd = (2 * sizes.ntor + 1) * (sizes.mpol + 2);
+    const auto pot = toHost(solver.potential(), mnpd);
+    bool pot_ok = true;
+    for (int mn = 0; mn < mnpd; ++mn) {
+        if (!is_close_rel_abs(static_cast<double>(bsqvac.at("potsin")[mn]),
+                              pot[mn], tol)) {
+            pot_ok = false;
+        }
+    }
+    check(pot_ok, ("potsin " + iter_name));
+
+    check(compareZetaFast(nestedArray(bsqvac.at("potu")),
+                          toHost(solver.potU(), sizes.nZnT), sizes.nThetaEff,
+                          tol) == 0,
+          ("potu " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("potv")),
+                          toHost(solver.potV(), sizes.nZnT), sizes.nThetaEff,
+                          tol) == 0,
+          ("potv " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("bsubu")),
+                          toHost(solver.bSubU(), sizes.nZnT), sizes.nThetaEff,
+                          tol) == 0,
+          ("bsubu " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("bsubv")),
+                          toHost(solver.bSubV(), sizes.nZnT), sizes.nThetaEff,
+                          tol) == 0,
+          ("bsubv " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("bsqvac")),
+                          toHost(solver.bSqVac(), sizes.nZnT), sizes.nThetaEff,
+                          tol) == 0,
+          ("bsqvac " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("brv")),
+                          toHost(solver.vacuumBR(), sizes.nZnT),
+                          sizes.nThetaEff, tol) == 0,
+          ("brv " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("bphiv")),
+                          toHost(solver.vacuumBPhi(), sizes.nZnT),
+                          sizes.nThetaEff, tol) == 0,
+          ("bphiv " + iter_name));
+    check(compareZetaFast(nestedArray(bsqvac.at("bzv")),
+                          toHost(solver.vacuumBZ(), sizes.nZnT),
+                          sizes.nThetaEff, tol) == 0,
+          ("bzv " + iter_name));
+}
+
+}  // namespace
+
+int main() {
+    Sizes sizes(false, 5, 5, 4, 16, 36);
+    VacuumFieldSolver<double>::Params params(sizes);
+    params.coil_currents = {4700.0, 1000.0};
+    params.mgrid_file = kDataDir + "../mgrid_cth_like.nc";
+    VacuumFieldSolver<double> solver(params);
+
+    runIteration(53, solver, sizes);
+    runIteration(54, solver, sizes);
+    return summary();
+}

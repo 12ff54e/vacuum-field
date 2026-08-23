@@ -116,3 +116,32 @@ target_link_libraries(test_laplace_golden PRIVATE
   vfield_host vfield_cuda_double)
 vfield_enable_warnings(test_laplace_golden)
 vfield_add_test(test_laplace_golden unit;golden)
+
+add_executable(test_lasym_parity test_lasym_parity.cu)
+target_include_directories(test_lasym_parity PRIVATE
+  ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+  ${PROJECT_SOURCE_DIR}/tests/support)
+target_link_libraries(test_lasym_parity PRIVATE
+  vfield_host vfield_cuda_double)
+vfield_enable_warnings(test_lasym_parity)
+vfield_add_test(test_lasym_parity unit)
+
+if(VFIELD_HAVE_NETCDF)
+  add_executable(test_vacuum_field_golden test_vacuum_field_golden.cu)
+  target_include_directories(test_vacuum_field_golden PRIVATE
+    ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+    ${PROJECT_SOURCE_DIR}/tests/support)
+  target_link_libraries(test_vacuum_field_golden PRIVATE
+    vfield_host vfield_cuda_double)
+  vfield_enable_warnings(test_vacuum_field_golden)
+  vfield_add_test(test_vacuum_field_golden unit;golden)
+
+  add_executable(test_float_smoke test_float_smoke.cu)
+  target_include_directories(test_float_smoke PRIVATE
+    ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/tests/include
+    ${PROJECT_SOURCE_DIR}/tests/support)
+  target_link_libraries(test_float_smoke PRIVATE
+    vfield_host vfield_cuda_double vfield_cuda_float)
+  vfield_enable_warnings(test_float_smoke)
+  vfield_add_test(test_float_smoke unit)
+endif()

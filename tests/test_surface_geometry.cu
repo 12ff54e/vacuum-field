@@ -208,7 +208,7 @@ template <class T>
 void runPrecision(double tol) {
     Sizes sizes(false, kNfp, kMpol, kNtor, kNtheta, kNzeta);
     FourierBasis fb(sizes);
-    FourierBasisDevice<T> fbd(fb);
+    FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<T> sg(sizes, fbd);
 
     std::vector<double> rcc, rss, zsc, zcs;

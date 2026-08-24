@@ -4,7 +4,7 @@ The library is verified elementwise against Fortran-VMEC (educational_VMEC)
 checkpoint dumps of a full free-boundary equilibrium run of the
 `cth_like_free_bdy` case (nfp=5, mpol=5, ntor=4, ntheta=16, nzeta=36,
 ns=15), vendored in `tests/data/` with provenance. The golden inputs are
-decoded from the `vac1n_vacuum` dumps (rmnc/zmns -> rCC/rSS/zSC/zCS via the
+decoded from the `vac1n_vacuum` dumps (rmnc/zmns -> r_cc/r_ss/z_sc/z_cs via the
 FourierBasis conversions — the same decode vmecpp's own large tests use),
 which makes each comparison self-contained per iteration.
 
@@ -19,7 +19,7 @@ which makes each comparison self-contained per iteration.
 | `test_singular_integrals` | T_l^+/- recurrences vs 64-point Gauss-Legendre, forward and Miller branches, double+float | 1e-11 / 1e-5 |
 | `test_singular_golden` | `vac1n_analyt` (all_tlp/tlm, all_slp/slm, bvec at alp*(2 pi)^2, grpmn at alp), iterations 53/54 | 1e-9 |
 | `test_regularized_golden` | `vac1n_greenf` (tanu/tanv, gstore at 4 pi^2/alp, greenp at 1/alp), iteration 53 | 5e-10 |
-| `test_regularized_axisym` | axisymmetric nvper=64 path vs a CPU mirror of updateAxisymmetric | 1e-11 / 1e-4 |
+| `test_regularized_axisym` | axisymmetric nvper=64 path vs a CPU mirror of update_axisymmetric | 1e-11 / 1e-4 |
 | `test_laplace_solver` | manufactured single-mode round trip of the analysis DFTs (incl. lasym) | 1e-12 / 1e-4 |
 | `test_laplace_golden` | `vac1n_fourp/fouri/solver` (grpmn, source, bcos/bsin, actemp/astemp, bvec, amatrix, potvac_in; potvac_out cross-validates the host LU against Fortran LAPACK), iterations 53/54 | 1e-9 |
 | `test_vacuum_field_golden` | `vac1n_bsqvac` (potsin, potu/potv, bsubu/bsubv, bsqvac, brv/bphiv/bzv) — full end-to-end NESTOR equivalence, iterations 53/54 | 1e-10 |

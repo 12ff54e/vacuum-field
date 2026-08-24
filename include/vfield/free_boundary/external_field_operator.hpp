@@ -5,7 +5,7 @@
 // points (grid-bounds cropping with the vmecpp warning), plus the
 // Hanson-Hirshman axis-current filament field of the net toroidal current
 // (factor 1e-7 * 2 * I, Eq. (8) of Hanson & Hirshman 2002), and the covariant
-// (bSubU/bSubV) and normal (bDotN, with the minus sign) components. Serial
+// (b_sub_u/b_sub_v) and normal (b_dot_n, with the minus sign) components. Serial
 // over the whole grid. The abscab path is dropped
 // (USE_ABSCAB_FOR_AXIS_CURRENT == false in vmecpp).
 #ifndef VFIELD_FREE_BOUNDARY_EXTERNAL_FIELD_OPERATOR_HPP_
@@ -25,25 +25,25 @@ class ExternalFieldOperator {
                           const SurfaceGeometryOperator<T>& sg,
                           const MgridProvider& mgrid);
 
-    // rAxis/zAxis are device pointers over a single field-period module
-    // [nZeta]; netToroidalCurrent is in Amperes (the VMEC cTor/MU_0 form is
+    // r_axis/z_axis are device pointers over a single field-period module
+    // [nZeta]; net_toroidal_current is in Amperes (the VMEC cTor/MU_0 form is
     // undone by the 1e-7 Biot-Savart prefactor).
     void update(const T* d_r_axis, const T* d_z_axis, T net_toroidal_current);
 
     // [nZnT]
-    const T* interpBr() const { return interp_br_.data(); }
-    const T* interpBp() const { return interp_bp_.data(); }
-    const T* interpBz() const { return interp_bz_.data(); }
-    const T* curtorBr() const { return curtor_br_.data(); }
-    const T* curtorBp() const { return curtor_bp_.data(); }
-    const T* curtorBz() const { return curtor_bz_.data(); }
-    const T* bSubU() const { return bsubu_.data(); }
-    const T* bSubV() const { return bsubv_.data(); }
-    const T* bDotN() const { return bdotn_.data(); }
+    const T* interp_br() const { return interp_br_.data(); }
+    const T* interp_bp() const { return interp_bp_.data(); }
+    const T* interp_bz() const { return interp_bz_.data(); }
+    const T* curtor_br() const { return curtor_br_.data(); }
+    const T* curtor_bp() const { return curtor_bp_.data(); }
+    const T* curtor_bz() const { return curtor_bz_.data(); }
+    const T* b_sub_u() const { return bsubu_.data(); }
+    const T* b_sub_v() const { return bsubv_.data(); }
+    const T* b_dot_n() const { return bdotn_.data(); }
 
     // [3 * (nZeta * nvper + 1)] — the axis polygon in Cartesian coordinates
     // (interleaved x/y/z), closed; exposed for the xpts_axis golden check.
-    const T* axisXyz() const { return axis_xyz_.data(); }
+    const T* axis_xyz() const { return axis_xyz_.data(); }
 
     int nvper() const { return nvper_; }
 

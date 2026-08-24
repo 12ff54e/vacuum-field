@@ -28,28 +28,28 @@ class LaplaceSolverOperator {
     LaplaceSolverOperator(const Sizes& sizes, const FourierBasisDevice<T>& fb);
 
     // The analysis pipeline (in vmecpp's order):
-    //   transformGreensFunctionDerivative(greenp) -> grpmn (regularized part)
-    //   symmetriseSourceTerm(gstore) -> gstore_symm (odd part)
-    //   accumulateFullGrpmn(singular grpmn) += singular / nfp
-    //   performToroidalFourierTransforms() -> bcos/bsin + actemp/astemp
-    //   performPoloidalFourierTransforms() -> bvec_sin + amat
-    //   buildMatrix() -> matrix (gauge rows zeroed, +0.5 diagonal)
-    //   decomposeMatrix() -> host LU factorization (full updates only)
-    //   solveForPotential(singular bvec) -> solution (potential coeffs)
-    void transformGreensFunctionDerivative(const T* d_greenp);
-    void symmetriseSourceTerm(const T* d_gstore);
-    void accumulateFullGrpmn(const T* d_singular_sin, const T* d_singular_cos);
-    void performToroidalFourierTransforms();
-    void performPoloidalFourierTransforms();
-    void buildMatrix();
-    void decomposeMatrix();
-    void solveForPotential(const T* d_singular_bvec);
+    //   transform_greens_function_derivative(greenp) -> grpmn (regularized part)
+    //   symmetrise_source_term(gstore) -> gstore_symm (odd part)
+    //   accumulate_full_grpmn(singular grpmn) += singular / nfp
+    //   perform_toroidal_fourier_transforms() -> bcos/bsin + actemp/astemp
+    //   perform_poloidal_fourier_transforms() -> bvec_sin + amat
+    //   build_matrix() -> matrix (gauge rows zeroed, +0.5 diagonal)
+    //   decompose_matrix() -> host LU factorization (full updates only)
+    //   solve_for_potential(singular bvec) -> solution (potential coeffs)
+    void transform_greens_function_derivative(const T* d_greenp);
+    void symmetrise_source_term(const T* d_gstore);
+    void accumulate_full_grpmn(const T* d_singular_sin, const T* d_singular_cos);
+    void perform_toroidal_fourier_transforms();
+    void perform_poloidal_fourier_transforms();
+    void build_matrix();
+    void decompose_matrix();
+    void solve_for_potential(const T* d_singular_bvec);
 
     // [mnpd * nZnT] — full grpmn (regularized + singular/nfp).
-    const T* grpmnSin() const { return grpmn_sin_.data(); }
-    const T* grpmnCos() const { return grpmn_cos_.data(); }
+    const T* grpmn_sin() const { return grpmn_sin_.data(); }
+    const T* grpmn_cos() const { return grpmn_cos_.data(); }
     // [nThetaReduced * nZeta] — odd-symmetrized source.
-    const T* gstoreSymm() const { return gstore_symm_.data(); }
+    const T* gstore_symm() const { return gstore_symm_.data(); }
     // [(2nf+1) * nThetaReduced].
     const T* bcos() const { return bcos_.data(); }
     const T* bsin() const { return bsin_.data(); }
@@ -57,7 +57,7 @@ class LaplaceSolverOperator {
     const T* actemp() const { return actemp_.data(); }
     const T* astemp() const { return astemp_.data(); }
     // [mnpd] — the regularized part of the RHS.
-    const T* bvecSin() const { return bvec_sin_.data(); }
+    const T* bvec_sin() const { return bvec_sin_.data(); }
     // [mnpd * mnpd] — the assembled matrix (flat, vmecpp layout).
     const T* matrix() const { return matrix_.data(); }
     // [mnpd] — the assembled RHS / the potential solution.

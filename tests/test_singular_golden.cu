@@ -29,18 +29,18 @@ using vfield::SingularIntegralsOperator;
 using vfield::Sizes;
 using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
-using vfield::test::flatArray;
+using vfield::test::flat_array;
 using vfield::test::is_close_rel_abs;
-using vfield::test::loadGolden;
+using vfield::test::load_golden;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
 const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
-std::string jsonPath(const std::string& checkpoint, int iter) {
+std::string json_path(const std::string& checkpoint, int iter) {
     std::ostringstream oss;
     oss << DATA_DIR << checkpoint << "/" << checkpoint << "_00015_"
         << std::setw(6) << std::setfill('0') << iter
@@ -48,9 +48,9 @@ std::string jsonPath(const std::string& checkpoint, int iter) {
     return oss.str();
 }
 
-void runIteration(int iter) {
-    const json::Value vacuum = loadGolden(jsonPath("vac1n_vacuum", iter));
-    const json::Value analyt = loadGolden(jsonPath("vac1n_analyt", iter));
+void run_iteration(int iter) {
+    const json::Value vacuum = load_golden(json_path("vac1n_vacuum", iter));
+    const json::Value analyt = load_golden(json_path("vac1n_analyt", iter));
 
     const bool full_update =
         (static_cast<double>(vacuum.at("ivac_skip")) == 0.0);
@@ -61,14 +61,14 @@ void runIteration(int iter) {
     FourierBasis fb(sizes);
 
     std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
-    fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+    fb.cos_to_cc_ss(flat_array(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
                  sizes.mpol);
     std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
-    fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+    fb.sin_to_sc_cs(flat_array(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                  sizes.mpol);
 
     MgridProvider mgrid;
-    mgrid.loadFile(DATA_DIR + "../mgrid_cth_like.nc",
+    mgrid.load_file(DATA_DIR + "../mgrid_cth_like.nc",
                    std::vector<double>{4700.0, 1000.0});
 
     FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);
@@ -79,12 +79,12 @@ void runIteration(int iter) {
     const int nf = sizes.ntor;
     const int mf = sizes.mpol + 1;
 
-    auto d_rcc = toDevice(rcc);
-    auto d_rss = toDevice(rss);
-    auto d_zsc = toDevice(zsc);
-    auto d_zcs = toDevice(zcs);
-    auto d_raxis = toDevice(flatArray(vacuum.at("raxis_nestor")));
-    auto d_zaxis = toDevice(flatArray(vacuum.at("zaxis_nestor")));
+    auto d_rcc = to_device(rcc);
+    auto d_rss = to_device(rss);
+    auto d_zsc = to_device(zsc);
+    auto d_zcs = to_device(zcs);
+    auto d_raxis = to_device(flat_array(vacuum.at("raxis_nestor")));
+    auto d_zaxis = to_device(flat_array(vacuum.at("zaxis_nestor")));
 
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
               d_zcs.data(), nullptr, nullptr, sign_j, full_update);
@@ -92,14 +92,14 @@ void runIteration(int iter) {
         static_cast<double>(vacuum.at("plascur")) /
         (4.0 * std::numbers::pi * 1.0e-7);
     ef.update(d_raxis.data(), d_zaxis.data(), net_toroidal_current);
-    si.update(ef.bDotN(), full_update);
+    si.update(ef.b_dot_n(), full_update);
 
     const double tol = 1e-9;
     const std::string iter_name = "iter " + std::to_string(iter);
 
     // T tables: [fl][k][l], compared directly.
-    const auto tlp = toHost(si.tlp(), (nf + mf + 2) * sizes.nZnT);
-    const auto tlm = toHost(si.tlm(), (nf + mf + 2) * sizes.nZnT);
+    const auto tlp = to_host(si.tlp(), (nf + mf + 2) * sizes.nZnT);
+    const auto tlm = to_host(si.tlm(), (nf + mf + 2) * sizes.nZnT);
     bool t_ok = true;
     for (int fl = 0; fl < mf + nf + 1; ++fl) {
         for (int kl = 0; kl < sizes.nZnT; ++kl) {
@@ -120,7 +120,7 @@ void runIteration(int iter) {
     // bvec: scale alp * (2 pi)^2, Fortran layout [m][nf+n].
     const double bvec_scale = 2.0 * std::numbers::pi / sizes.nfp * 4.0 *
                               std::numbers::pi * std::numbers::pi;
-    const auto bvec = toHost(si.bvecSin(), (2 * nf + 1) * (mf + 1));
+    const auto bvec = to_host(si.bvec_sin(), (2 * nf + 1) * (mf + 1));
     bool bvec_ok = true;
     for (int n = 0; n < nf + 1; ++n) {
         for (int m = 0; m < mf + 1; ++m) {
@@ -144,8 +144,8 @@ void runIteration(int iter) {
 
     if (full_update) {
         // S tables: [fl][k][l], compared directly.
-        const auto slp = toHost(si.slp(), (nf + mf + 1) * sizes.nZnT);
-        const auto slm = toHost(si.slm(), (nf + mf + 1) * sizes.nZnT);
+        const auto slp = to_host(si.slp(), (nf + mf + 1) * sizes.nZnT);
+        const auto slm = to_host(si.slm(), (nf + mf + 1) * sizes.nZnT);
         bool s_ok = true;
         for (int fl = 0; fl < mf + nf + 1; ++fl) {
             for (int kl = 0; kl < sizes.nZnT; ++kl) {
@@ -168,7 +168,7 @@ void runIteration(int iter) {
         // grpmn: scale alp, Fortran layout [m][nf+n][k][l].
         const double grpmn_scale = 2.0 * std::numbers::pi / sizes.nfp;
         const auto grpmn =
-            toHost(si.grpmnSin(), (2 * nf + 1) * (mf + 1) * sizes.nZnT);
+            to_host(si.grpmn_sin(), (2 * nf + 1) * (mf + 1) * sizes.nZnT);
         bool grpmn_ok = true;
         for (int n = 0; n < nf + 1; ++n) {
             for (int m = 0; m < mf + 1; ++m) {
@@ -203,7 +203,7 @@ void runIteration(int iter) {
 }  // namespace
 
 int main() {
-    runIteration(53);
-    runIteration(54);
+    run_iteration(53);
+    run_iteration(54);
     return summary();
 }

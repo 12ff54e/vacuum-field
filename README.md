@@ -15,10 +15,10 @@ the plasma boundary consistent with the coil field:
   (Green's second identity) form of the vacuum Laplace problem,
   `Φ/2 + PV∫ Φ ∂G/∂n′ = ∫ G ∂Φ/∂n′`, discretized in the sin(mθ−nζ) Fourier
   basis (dense system, dimension `(2·ntor+1)(mpol+2)`);
-- covariant field components `bSubU`/`bSubV` (potential + external field);
-- vacuum magnetic pressure `bSqVac = |B|²/2` and cylindrical components
+- covariant field components `b_sub_u`/`b_sub_v` (potential + external field);
+- vacuum magnetic pressure `b_sq_vac = |B|²/2` and cylindrical components
   `B_R`/`B_φ`/`B_Z` on the boundary;
-- the surface-integral scalars `bSubUVac`/`bSubVVac` (net toroidal / poloidal
+- the surface-integral scalars `b_sub_u_vac`/`b_sub_v_vac` (net toroidal / poloidal
   current diagnostics).
 
 The singular kernel is split into an analytically integrable local
@@ -47,7 +47,7 @@ Numerical correctness is verified elementwise against Fortran-VMEC reference
 data for a full free-boundary equilibrium run (vmecpp's `cth_like_free_bdy`
 case, `tests/data/`): surface geometry at 1e-12, external field at 1e-10,
 singular/regularized integrals and the Laplace pipeline at 1e-9/5e-10, and the
-end-to-end `bSqVac` at 1e-10. See `docs/verification.md`.
+end-to-end `b_sq_vac` at 1e-10. See `docs/verification.md`.
 
 ## License
 

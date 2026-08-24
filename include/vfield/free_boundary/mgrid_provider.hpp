@@ -41,48 +41,48 @@ class MgridProvider {
     // Reads an mgrid NetCDF file and accumulates the per-ampere coil fields
     // weighted by coil_currents (A). Throws on missing/invalid input;
     // throws "not compiled in" when NetCDF support is absent.
-    void loadFile(const std::string& filename,
+    void load_file(const std::string& filename,
                   const std::vector<double>& coil_currents);
 
-    // In-memory variant of loadFile (no NetCDF needed).
-    void loadFields(const ResponseTable& table,
+    // In-memory variant of load_file (no NetCDF needed).
+    void load_fields(const ResponseTable& table,
                     const std::vector<double>& coil_currents);
 
     // Bypasses the grid entirely: the external-field operator copies the
     // per-point fields verbatim instead of interpolating.
-    void setFixedMagneticField(const std::vector<double>& fixed_br,
+    void set_fixed_magnetic_field(const std::vector<double>& fixed_br,
                                const std::vector<double>& fixed_bp,
                                const std::vector<double>& fixed_bz);
 
-    // Summed coil field on the R-Z-phi grid, [numPhi * numZ * numR], linear
-    // index (phi * numZ + z) * numR + r.
-    std::vector<double> bR;
-    std::vector<double> bP;
-    std::vector<double> bZ;
+    // Summed coil field on the R-Z-phi grid, [num_phi * num_z * num_r], linear
+    // index (phi * num_z + z) * num_r + r.
+    std::vector<double> b_r;
+    std::vector<double> b_p;
+    std::vector<double> b_z;
 
     int nfp = -1;
 
-    int numR = -1;
-    double minR = 0.0;
-    double maxR = 0.0;
-    double deltaR = 0.0;
+    int num_r = -1;
+    double min_r = 0.0;
+    double max_r = 0.0;
+    double delta_r = 0.0;
 
-    int numZ = -1;
-    double minZ = 0.0;
-    double maxZ = 0.0;
-    double deltaZ = 0.0;
+    int num_z = -1;
+    double min_z = 0.0;
+    double max_z = 0.0;
+    double delta_z = 0.0;
 
-    int numPhi = -1;
+    int num_phi = -1;
 
     int nextcur = -1;
 
     std::string mgrid_mode;
 
-    bool isLoaded() const { return has_mgrid_loaded_; }
-    bool hasFixedField() const { return has_fixed_field_; }
-    const std::vector<double>& fixedBr() const { return fixed_br_; }
-    const std::vector<double>& fixedBp() const { return fixed_bp_; }
-    const std::vector<double>& fixedBz() const { return fixed_bz_; }
+    bool is_loaded() const { return has_mgrid_loaded_; }
+    bool has_fixed_field() const { return has_fixed_field_; }
+    const std::vector<double>& fixed_br() const { return fixed_br_; }
+    const std::vector<double>& fixed_bp() const { return fixed_bp_; }
+    const std::vector<double>& fixed_bz() const { return fixed_bz_; }
 
    private:
     bool has_mgrid_loaded_ = false;

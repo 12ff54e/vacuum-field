@@ -20,7 +20,7 @@ namespace {
 
 constexpr int BLOCK_SIZE = 256;
 
-inline int gridSize(int n) {
+inline int grid_size(int n) {
     return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
@@ -28,14 +28,14 @@ inline int gridSize(int n) {
 // cudaLaunchKernel copies the params out of the args array at launch time, so
 // a stack array is safe.
 template <class KernelParams>
-void launchChecked(const void* func,
+void launch_checked(const void* func,
                    int n,
                    int block,
                    const KernelParams& params,
                    cudaStream_t stream,
                    const char* tag) {
     void* kargs[] = {const_cast<KernelParams*>(&params)};
-    check_cuda(cudaLaunchKernel(func, dim3(gridSize(n)), dim3(block), kargs, 0,
+    check_cuda(cudaLaunchKernel(func, dim3(grid_size(n)), dim3(block), kargs, 0,
                                 stream),
                tag);
 }
@@ -49,14 +49,14 @@ template <class T>
 struct SurfaceKernelParams {
     // LCFS Fourier coefficients (n-major, mnsize each; antisymmetric ones may
     // be nullptr when !lasym).
-    const T* rCC;
-    const T* rSS;
-    const T* rSC;
-    const T* rCS;
-    const T* zSC;
-    const T* zCS;
-    const T* zCC;
-    const T* zSS;
+    const T* r_cc;
+    const T* r_ss;
+    const T* r_sc;
+    const T* r_cs;
+    const T* z_sc;
+    const T* z_cs;
+    const T* z_cc;
+    const T* z_ss;
     // Fourier basis tables.
     const T* cosmu;
     const T* sinmu;
@@ -67,8 +67,8 @@ struct SurfaceKernelParams {
     const T* cosnvn;
     const T* sinnvn;
     // Toroidal-angle trig of the surface grid points.
-    const T* cosPhi;
-    const T* sinPhi;
+    const T* cos_phi;
+    const T* sin_phi;
     // Sizes.
     int mpol;
     int ntor;
@@ -79,8 +79,8 @@ struct SurfaceKernelParams {
     int nThetaEven;
     int nZnT;
     bool lasym;
-    bool fullUpdate;
-    int signOfJacobian;
+    bool full_update;
+    int sign_of_jacobian;
     // Outputs.
     T* r1b;
     T* z1b;
@@ -107,18 +107,18 @@ struct SurfaceKernelParams {
     T* auv;
     T* avv;
     T* drv;
-    T* r1bAsym;
+    T* r1b_asym;
     T* z1bAsym;
-    T* rubAsym;
-    T* rvbAsym;
-    T* zubAsym;
-    T* zvbAsym;
-    T* ruuAsym;
-    T* ruvAsym;
-    T* rvvAsym;
-    T* zuuAsym;
-    T* zuvAsym;
-    T* zvvAsym;
+    T* rub_asym;
+    T* rvb_asym;
+    T* zub_asym;
+    T* zvb_asym;
+    T* ruu_asym;
+    T* ruv_asym;
+    T* rvv_asym;
+    T* zuu_asym;
+    T* zuv_asym;
+    T* zvv_asym;
 };
 
 // Evaluate the Fourier series over the REDUCED poloidal range [0, pi]
@@ -126,7 +126,7 @@ struct SurfaceKernelParams {
 // (and second derivatives on full updates), plus the lasym antisymmetric
 // pieces. The second poloidal half is filled by the mirror kernels below.
 template <class T>
-__global__ void surfaceSynthesisKernel(SurfaceKernelParams<T> p) {
+__global__ void surface_synthesis_kernel(SurfaceKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nZeta * p.nThetaReduced) return;
     const int l = kl / p.nZeta;
@@ -199,33 +199,33 @@ __global__ void surfaceSynthesisKernel(SurfaceKernelParams<T> p) {
             const T cosmumm = -T(mSq) * cosmu;
             const T sinmumm = -T(mSq) * sinmu;
 
-            rmkcc += p.rCC[idx_mn] * cosmu;
-            rmkss += p.rSS[idx_mn] * sinmu;
-            zmksc += p.zSC[idx_mn] * sinmu;
-            zmkcs += p.zCS[idx_mn] * cosmu;
+            rmkcc += p.r_cc[idx_mn] * cosmu;
+            rmkss += p.r_ss[idx_mn] * sinmu;
+            zmksc += p.z_sc[idx_mn] * sinmu;
+            zmkcs += p.z_cs[idx_mn] * cosmu;
 
-            rmkcc_m += p.rCC[idx_mn] * sinmum;
-            rmkcc_mm += p.rCC[idx_mn] * cosmumm;
-            rmkss_m += p.rSS[idx_mn] * cosmum;
-            rmkss_mm += p.rSS[idx_mn] * sinmumm;
-            zmksc_m += p.zSC[idx_mn] * cosmum;
-            zmksc_mm += p.zSC[idx_mn] * sinmumm;
-            zmkcs_m += p.zCS[idx_mn] * sinmum;
-            zmkcs_mm += p.zCS[idx_mn] * cosmumm;
+            rmkcc_m += p.r_cc[idx_mn] * sinmum;
+            rmkcc_mm += p.r_cc[idx_mn] * cosmumm;
+            rmkss_m += p.r_ss[idx_mn] * cosmum;
+            rmkss_mm += p.r_ss[idx_mn] * sinmumm;
+            zmksc_m += p.z_sc[idx_mn] * cosmum;
+            zmksc_mm += p.z_sc[idx_mn] * sinmumm;
+            zmkcs_m += p.z_cs[idx_mn] * sinmum;
+            zmkcs_mm += p.z_cs[idx_mn] * cosmumm;
 
             if (p.lasym) {
-                rmksc += p.rSC[idx_mn] * sinmu;
-                rmkcs += p.rCS[idx_mn] * cosmu;
-                zmkcc += p.zCC[idx_mn] * cosmu;
-                zmkss += p.zSS[idx_mn] * sinmu;
-                rmksc_m += p.rSC[idx_mn] * cosmum;
-                rmksc_mm += p.rSC[idx_mn] * sinmumm;
-                rmkcs_m += p.rCS[idx_mn] * sinmum;
-                rmkcs_mm += p.rCS[idx_mn] * cosmumm;
-                zmkcc_m += p.zCC[idx_mn] * sinmum;
-                zmkcc_mm += p.zCC[idx_mn] * cosmumm;
-                zmkss_m += p.zSS[idx_mn] * cosmum;
-                zmkss_mm += p.zSS[idx_mn] * sinmumm;
+                rmksc += p.r_sc[idx_mn] * sinmu;
+                rmkcs += p.r_cs[idx_mn] * cosmu;
+                zmkcc += p.z_cc[idx_mn] * cosmu;
+                zmkss += p.z_ss[idx_mn] * sinmu;
+                rmksc_m += p.r_sc[idx_mn] * cosmum;
+                rmksc_mm += p.r_sc[idx_mn] * sinmumm;
+                rmkcs_m += p.r_cs[idx_mn] * sinmum;
+                rmkcs_mm += p.r_cs[idx_mn] * cosmumm;
+                zmkcc_m += p.z_cc[idx_mn] * sinmum;
+                zmkcc_mm += p.z_cc[idx_mn] * cosmumm;
+                zmkss_m += p.z_ss[idx_mn] * cosmum;
+                zmkss_mm += p.z_ss[idx_mn] * sinmumm;
             }
         }  // m
 
@@ -252,7 +252,7 @@ __global__ void surfaceSynthesisKernel(SurfaceKernelParams<T> p) {
             zvb_asym += zmkcc * sinnvn + zmkss * cosnvn;
         }
 
-        if (p.fullUpdate) {
+        if (p.full_update) {
             // second-order toroidal derivatives
             const T cosnvnn = -T(nSq) * cosnv;
             const T sinnvnn = -T(nSq) * sinnv;
@@ -282,14 +282,14 @@ __global__ void surfaceSynthesisKernel(SurfaceKernelParams<T> p) {
     p.zub[kl] = zub;
     p.zvb[kl] = zvb;
     if (p.lasym) {
-        p.r1bAsym[kl] = r1b_asym;
+        p.r1b_asym[kl] = r1b_asym;
         p.z1bAsym[kl] = z1b_asym;
-        p.rubAsym[kl] = rub_asym;
-        p.rvbAsym[kl] = rvb_asym;
-        p.zubAsym[kl] = zub_asym;
-        p.zvbAsym[kl] = zvb_asym;
+        p.rub_asym[kl] = rub_asym;
+        p.rvb_asym[kl] = rvb_asym;
+        p.zub_asym[kl] = zub_asym;
+        p.zvb_asym[kl] = zvb_asym;
     }
-    if (p.fullUpdate) {
+    if (p.full_update) {
         p.ruu[kl] = ruu;
         p.ruv[kl] = ruv;
         p.rvv[kl] = rvv;
@@ -297,12 +297,12 @@ __global__ void surfaceSynthesisKernel(SurfaceKernelParams<T> p) {
         p.zuv[kl] = zuv;
         p.zvv[kl] = zvv;
         if (p.lasym) {
-            p.ruuAsym[kl] = ruu_asym;
-            p.ruvAsym[kl] = ruv_asym;
-            p.rvvAsym[kl] = rvv_asym;
-            p.zuuAsym[kl] = zuu_asym;
-            p.zuvAsym[kl] = zuv_asym;
-            p.zvvAsym[kl] = zvv_asym;
+            p.ruu_asym[kl] = ruu_asym;
+            p.ruv_asym[kl] = ruv_asym;
+            p.rvv_asym[kl] = rvv_asym;
+            p.zuu_asym[kl] = zuu_asym;
+            p.zuv_asym[kl] = zuv_asym;
+            p.zvv_asym[kl] = zvv_asym;
         }
     }
 }
@@ -312,7 +312,7 @@ __global__ void surfaceSynthesisKernel(SurfaceKernelParams<T> p) {
 // educational_VMEC symrzl). Runs while the first half still holds the pure
 // symmetric values.
 template <class T>
-__global__ void surfaceMirrorLasymSecondHalfKernel(SurfaceKernelParams<T> p) {
+__global__ void surface_mirror_lasym_second_half_kernel(SurfaceKernelParams<T> p) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= (p.nThetaReduced - 2) * p.nZeta) return;
     const int l = 1 + idx / p.nZeta;
@@ -322,42 +322,42 @@ __global__ void surfaceMirrorLasymSecondHalfKernel(SurfaceKernelParams<T> p) {
     const int kl = l * p.nZeta + k;
     const int klRev = lRev * p.nZeta + REV;
 
-    p.r1b[klRev] = p.r1b[kl] - p.r1bAsym[kl];
+    p.r1b[klRev] = p.r1b[kl] - p.r1b_asym[kl];
     p.z1b[klRev] = -p.z1b[kl] + p.z1bAsym[kl];
-    p.rub[klRev] = -p.rub[kl] + p.rubAsym[kl];
-    p.rvb[klRev] = -p.rvb[kl] + p.rvbAsym[kl];
-    p.zub[klRev] = p.zub[kl] - p.zubAsym[kl];
-    p.zvb[klRev] = p.zvb[kl] - p.zvbAsym[kl];
-    if (p.fullUpdate) {
-        p.ruu[klRev] = p.ruu[kl] - p.ruuAsym[kl];
-        p.ruv[klRev] = p.ruv[kl] - p.ruvAsym[kl];
-        p.rvv[klRev] = p.rvv[kl] - p.rvvAsym[kl];
-        p.zuu[klRev] = -p.zuu[kl] + p.zuuAsym[kl];
-        p.zuv[klRev] = -p.zuv[kl] + p.zuvAsym[kl];
-        p.zvv[klRev] = -p.zvv[kl] + p.zvvAsym[kl];
+    p.rub[klRev] = -p.rub[kl] + p.rub_asym[kl];
+    p.rvb[klRev] = -p.rvb[kl] + p.rvb_asym[kl];
+    p.zub[klRev] = p.zub[kl] - p.zub_asym[kl];
+    p.zvb[klRev] = p.zvb[kl] - p.zvb_asym[kl];
+    if (p.full_update) {
+        p.ruu[klRev] = p.ruu[kl] - p.ruu_asym[kl];
+        p.ruv[klRev] = p.ruv[kl] - p.ruv_asym[kl];
+        p.rvv[klRev] = p.rvv[kl] - p.rvv_asym[kl];
+        p.zuu[klRev] = -p.zuu[kl] + p.zuu_asym[kl];
+        p.zuv[klRev] = -p.zuv[kl] + p.zuv_asym[kl];
+        p.zvv[klRev] = -p.zvv[kl] + p.zvv_asym[kl];
     }
 }
 
 // lasym only: first poloidal half [0,pi] = symmetric + antisymmetric. Must
 // run after the second-half mirror.
 template <class T>
-__global__ void surfaceCombineLasymFirstHalfKernel(SurfaceKernelParams<T> p) {
+__global__ void surface_combine_lasym_first_half_kernel(SurfaceKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nZeta * p.nThetaReduced) return;
 
-    p.r1b[kl] += p.r1bAsym[kl];
+    p.r1b[kl] += p.r1b_asym[kl];
     p.z1b[kl] += p.z1bAsym[kl];
-    p.rub[kl] += p.rubAsym[kl];
-    p.rvb[kl] += p.rvbAsym[kl];
-    p.zub[kl] += p.zubAsym[kl];
-    p.zvb[kl] += p.zvbAsym[kl];
-    if (p.fullUpdate) {
-        p.ruu[kl] += p.ruuAsym[kl];
-        p.ruv[kl] += p.ruvAsym[kl];
-        p.rvv[kl] += p.rvvAsym[kl];
-        p.zuu[kl] += p.zuuAsym[kl];
-        p.zuv[kl] += p.zuvAsym[kl];
-        p.zvv[kl] += p.zvvAsym[kl];
+    p.rub[kl] += p.rub_asym[kl];
+    p.rvb[kl] += p.rvb_asym[kl];
+    p.zub[kl] += p.zub_asym[kl];
+    p.zvb[kl] += p.zvb_asym[kl];
+    if (p.full_update) {
+        p.ruu[kl] += p.ruu_asym[kl];
+        p.ruv[kl] += p.ruv_asym[kl];
+        p.rvv[kl] += p.rvv_asym[kl];
+        p.zuu[kl] += p.zuu_asym[kl];
+        p.zuv[kl] += p.zuv_asym[kl];
+        p.zvv[kl] += p.zvv_asym[kl];
     }
 }
 
@@ -365,11 +365,11 @@ __global__ void surfaceCombineLasymFirstHalfKernel(SurfaceKernelParams<T> p) {
 // NESTOR-normalized metric, and (on full updates) the second fundamental form
 // and drv, over the effective poloidal range [0, nZnT).
 template <class T>
-__global__ void surfaceDerivedKernel(SurfaceKernelParams<T> p) {
+__global__ void surface_derived_kernel(SurfaceKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nZnT) return;
 
-    const T sign_j = static_cast<T>(p.signOfJacobian);
+    const T sign_j = static_cast<T>(p.sign_of_jacobian);
 
     // surface normal vector components
     p.snr[kl] = sign_j * p.r1b[kl] * p.zub[kl];
@@ -384,7 +384,7 @@ __global__ void surfaceDerivedKernel(SurfaceKernelParams<T> p) {
                  p.zvb[kl] * p.zvb[kl]) /
                 (T(p.nfp) * T(p.nfp));
 
-    if (p.fullUpdate) {
+    if (p.full_update) {
         // d^2X/d(ij) . N (used in Kmn)
         p.auu[kl] = (p.ruu[kl] * p.snr[kl] + p.zuu[kl] * p.snz[kl]) / 2;
         p.auv[kl] = (p.ruv[kl] * p.snr[kl] + p.rub[kl] * p.snv[kl] +
@@ -403,16 +403,16 @@ __global__ void surfaceDerivedKernel(SurfaceKernelParams<T> p) {
 
 // R^2 + Z^2 over the effective poloidal range (full_update only).
 template <class T>
-__global__ void surfaceRzb2Kernel(SurfaceKernelParams<T> p) {
+__global__ void surface_rzb2_kernel(SurfaceKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nZnT) return;
     p.rzb2[kl] = p.r1b[kl] * p.r1b[kl] + p.z1b[kl] * p.z1b[kl];
 }
 
 // Stellarator-symmetric case: mirror r1b/z1b/rzb2 into the second poloidal
-// half (full_update only; runs after surfaceRzb2Kernel).
+// half (full_update only; runs after surface_rzb2_kernel).
 template <class T>
-__global__ void surfaceMirrorSymmetricKernel(SurfaceKernelParams<T> p) {
+__global__ void surface_mirror_symmetric_kernel(SurfaceKernelParams<T> p) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= (p.nThetaReduced - 2) * p.nZeta) return;
     const int l = 1 + idx / p.nZeta;
@@ -429,12 +429,12 @@ __global__ void surfaceMirrorSymmetricKernel(SurfaceKernelParams<T> p) {
 
 // x = R cos(phi), y = R sin(phi) over the FULL surface (full_update only).
 template <class T>
-__global__ void surfaceRcosuvKernel(SurfaceKernelParams<T> p) {
+__global__ void surface_rcosuv_kernel(SurfaceKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nThetaEven * p.nZeta) return;
     const int k = kl % p.nZeta;
-    p.rcosuv[kl] = p.r1b[kl] * p.cosPhi[k];
-    p.rsinuv[kl] = p.r1b[kl] * p.sinPhi[k];
+    p.rcosuv[kl] = p.r1b[kl] * p.cos_phi[k];
+    p.rsinuv[kl] = p.r1b[kl] * p.sin_phi[k];
 }
 
 template <class T>
@@ -527,14 +527,14 @@ void SurfaceGeometryOperator<T>::update(const T* d_rcc,
                                         int sign_of_jacobian,
                                         bool full_update) {
     SurfaceKernelParams<T> p{};
-    p.rCC = d_rcc;
-    p.rSS = d_rss;
-    p.rSC = d_rsc;
-    p.rCS = d_rcs;
-    p.zSC = d_zsc;
-    p.zCS = d_zcs;
-    p.zCC = d_zcc;
-    p.zSS = d_zss;
+    p.r_cc = d_rcc;
+    p.r_ss = d_rss;
+    p.r_sc = d_rsc;
+    p.r_cs = d_rcs;
+    p.z_sc = d_zsc;
+    p.z_cs = d_zcs;
+    p.z_cc = d_zcc;
+    p.z_ss = d_zss;
     p.cosmu = fb_.cosmu();
     p.sinmu = fb_.sinmu();
     p.cosmum = fb_.cosmum();
@@ -543,8 +543,8 @@ void SurfaceGeometryOperator<T>::update(const T* d_rcc,
     p.sinnv = fb_.sinnv();
     p.cosnvn = fb_.cosnvn();
     p.sinnvn = fb_.sinnvn();
-    p.cosPhi = cos_phi_.data();
-    p.sinPhi = sin_phi_.data();
+    p.cos_phi = cos_phi_.data();
+    p.sin_phi = sin_phi_.data();
     p.mpol = sizes_.mpol;
     p.ntor = sizes_.ntor;
     p.nZeta = sizes_.nZeta;
@@ -554,8 +554,8 @@ void SurfaceGeometryOperator<T>::update(const T* d_rcc,
     p.nThetaEven = sizes_.nThetaEven;
     p.nZnT = sizes_.nZnT;
     p.lasym = sizes_.lasym;
-    p.fullUpdate = full_update;
-    p.signOfJacobian = sign_of_jacobian;
+    p.full_update = full_update;
+    p.sign_of_jacobian = sign_of_jacobian;
     p.r1b = r1b_.data();
     p.z1b = z1b_.data();
     p.rcosuv = rcosuv_.data();
@@ -581,49 +581,49 @@ void SurfaceGeometryOperator<T>::update(const T* d_rcc,
     p.auv = auv_.data();
     p.avv = avv_.data();
     p.drv = drv_.data();
-    p.r1bAsym = r1b_asym_.data();
+    p.r1b_asym = r1b_asym_.data();
     p.z1bAsym = z1b_asym_.data();
-    p.rubAsym = rub_asym_.data();
-    p.rvbAsym = rvb_asym_.data();
-    p.zubAsym = zub_asym_.data();
-    p.zvbAsym = zvb_asym_.data();
-    p.ruuAsym = ruu_asym_.data();
-    p.ruvAsym = ruv_asym_.data();
-    p.rvvAsym = rvv_asym_.data();
-    p.zuuAsym = zuu_asym_.data();
-    p.zuvAsym = zuv_asym_.data();
-    p.zvvAsym = zvv_asym_.data();
+    p.rub_asym = rub_asym_.data();
+    p.rvb_asym = rvb_asym_.data();
+    p.zub_asym = zub_asym_.data();
+    p.zvb_asym = zvb_asym_.data();
+    p.ruu_asym = ruu_asym_.data();
+    p.ruv_asym = ruv_asym_.data();
+    p.rvv_asym = rvv_asym_.data();
+    p.zuu_asym = zuu_asym_.data();
+    p.zuv_asym = zuv_asym_.data();
+    p.zvv_asym = zvv_asym_.data();
 
-    const int nReduced = sizes_.nZeta * sizes_.nThetaReduced;
-    const int nMirror = (sizes_.nThetaReduced - 2) * sizes_.nZeta;
+    const int n_reduced = sizes_.nZeta * sizes_.nThetaReduced;
+    const int n_mirror = (sizes_.nThetaReduced - 2) * sizes_.nZeta;
 
-    launchChecked(reinterpret_cast<const void*>(&surfaceSynthesisKernel<T>),
-                  nReduced, BLOCK_SIZE, p, stream_,
+    launch_checked(reinterpret_cast<const void*>(&surface_synthesis_kernel<T>),
+                  n_reduced, BLOCK_SIZE, p, stream_,
                   "SurfaceGeometryOperator::update: synthesis");
     if (sizes_.lasym) {
-        launchChecked(reinterpret_cast<const void*>(
-                          &surfaceMirrorLasymSecondHalfKernel<T>),
-                      nMirror, BLOCK_SIZE, p, stream_,
+        launch_checked(reinterpret_cast<const void*>(
+                          &surface_mirror_lasym_second_half_kernel<T>),
+                      n_mirror, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: lasym second half");
-        launchChecked(reinterpret_cast<const void*>(
-                          &surfaceCombineLasymFirstHalfKernel<T>),
-                      nReduced, BLOCK_SIZE, p, stream_,
+        launch_checked(reinterpret_cast<const void*>(
+                          &surface_combine_lasym_first_half_kernel<T>),
+                      n_reduced, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: lasym first half");
     }
-    launchChecked(reinterpret_cast<const void*>(&surfaceDerivedKernel<T>),
+    launch_checked(reinterpret_cast<const void*>(&surface_derived_kernel<T>),
                   sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "SurfaceGeometryOperator::update: derived");
     if (full_update) {
-        launchChecked(reinterpret_cast<const void*>(&surfaceRzb2Kernel<T>),
+        launch_checked(reinterpret_cast<const void*>(&surface_rzb2_kernel<T>),
                       sizes_.nZnT, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: rzb2");
         if (!sizes_.lasym) {
-            launchChecked(
-                reinterpret_cast<const void*>(&surfaceMirrorSymmetricKernel<T>),
-                nMirror, BLOCK_SIZE, p, stream_,
+            launch_checked(
+                reinterpret_cast<const void*>(&surface_mirror_symmetric_kernel<T>),
+                n_mirror, BLOCK_SIZE, p, stream_,
                 "SurfaceGeometryOperator::update: symmetric mirror");
         }
-        launchChecked(reinterpret_cast<const void*>(&surfaceRcosuvKernel<T>),
+        launch_checked(reinterpret_cast<const void*>(&surface_rcosuv_kernel<T>),
                       sizes_.nThetaEven * sizes_.nZeta, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: rcosuv");
     }

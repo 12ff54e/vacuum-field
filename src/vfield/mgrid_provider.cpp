@@ -24,7 +24,7 @@ namespace {
 // Helpers over the NetCDF C API: each throws a std::runtime_error with a
 // descriptive message on failure.
 
-int openVariable(int ncid, const std::string& name) {
+int open_variable(int ncid, const std::string& name) {
     int varid = -1;
     if (nc_inq_varid(ncid, name.c_str(), &varid) != NC_NOERR) {
         throw std::runtime_error("mgrid file has no variable '" + name + "'");
@@ -32,7 +32,7 @@ int openVariable(int ncid, const std::string& name) {
     return varid;
 }
 
-void requireRank(int ncid, const std::string& name, int varid, int rank) {
+void require_rank(int ncid, const std::string& name, int varid, int rank) {
     int ndims = -1;
     nc_inq_varndims(ncid, varid, &ndims);
     if (ndims != rank) {
@@ -42,9 +42,9 @@ void requireRank(int ncid, const std::string& name, int varid, int rank) {
     }
 }
 
-int readIntScalar(int ncid, const std::string& name) {
-    int varid = openVariable(ncid, name);
-    requireRank(ncid, name, varid, 0);
+int read_int_scalar(int ncid, const std::string& name) {
+    int varid = open_variable(ncid, name);
+    require_rank(ncid, name, varid, 0);
     int value = 0;
     if (nc_get_var_int(ncid, varid, &value) != NC_NOERR) {
         throw std::runtime_error("failed to read variable '" + name + "'");
@@ -52,9 +52,9 @@ int readIntScalar(int ncid, const std::string& name) {
     return value;
 }
 
-double readDoubleScalar(int ncid, const std::string& name) {
-    int varid = openVariable(ncid, name);
-    requireRank(ncid, name, varid, 0);
+double read_double_scalar(int ncid, const std::string& name) {
+    int varid = open_variable(ncid, name);
+    require_rank(ncid, name, varid, 0);
     double value = 0.0;
     if (nc_get_var_double(ncid, varid, &value) != NC_NOERR) {
         throw std::runtime_error("failed to read variable '" + name + "'");
@@ -62,9 +62,9 @@ double readDoubleScalar(int ncid, const std::string& name) {
     return value;
 }
 
-std::string readStringScalar(int ncid, const std::string& name) {
-    int varid = openVariable(ncid, name);
-    requireRank(ncid, name, varid, 1);
+std::string read_string_scalar(int ncid, const std::string& name) {
+    int varid = open_variable(ncid, name);
+    require_rank(ncid, name, varid, 1);
     // The string variable's own dimension id comes from nc_inq_vardimid.
     int dimids[1] = {0};
     if (nc_inq_vardimid(ncid, varid, dimids) != NC_NOERR) {
@@ -79,13 +79,13 @@ std::string readStringScalar(int ncid, const std::string& name) {
     return value;
 }
 
-std::vector<double> readArray3D(int ncid,
+std::vector<double> read_array_3d(int ncid,
                                 const std::string& name,
                                 int num_phi,
                                 int num_z,
                                 int num_r) {
-    int varid = openVariable(ncid, name);
-    requireRank(ncid, name, varid, 3);
+    int varid = open_variable(ncid, name);
+    require_rank(ncid, name, varid, 3);
     int dimids[3] = {0, 0, 0};
     nc_inq_vardimid(ncid, varid, dimids);
     // The mgrid convention: dims (phi, zee, rad) — R fastest.
@@ -111,13 +111,13 @@ std::vector<double> readArray3D(int ncid,
 
 #endif  // VFIELD_HAVE_NETCDF
 
-std::string threeDigitField(int i) {
+std::string three_digit_field(int i) {
     char buf[16];
     std::snprintf(buf, sizeof(buf), "%03d", i + 1);
     return std::string(buf);
 }
 
-void validateCoilCount(std::size_t n_currents, int nextcur) {
+void validate_coil_count(std::size_t n_currents, int nextcur) {
     if (static_cast<int>(n_currents) != nextcur) {
         throw std::runtime_error(
             "Number of currents " + std::to_string(n_currents) +
@@ -128,7 +128,7 @@ void validateCoilCount(std::size_t n_currents, int nextcur) {
 
 }  // namespace
 
-void MgridProvider::loadFile(const std::string& filename,
+void MgridProvider::load_file(const std::string& filename,
                              const std::vector<double>& coil_currents) {
 #ifdef VFIELD_HAVE_NETCDF
     {  // try to open file in order to check if it is accessible
@@ -153,54 +153,54 @@ void MgridProvider::loadFile(const std::string& filename,
     };
 
     try {
-        nfp = readIntScalar(ncid, "nfp");
+        nfp = read_int_scalar(ncid, "nfp");
 
-        numR = readIntScalar(ncid, "ir");
-        minR = readDoubleScalar(ncid, "rmin");
-        maxR = readDoubleScalar(ncid, "rmax");
-        deltaR = (maxR - minR) / (numR - 1.0);
+        num_r = read_int_scalar(ncid, "ir");
+        min_r = read_double_scalar(ncid, "rmin");
+        max_r = read_double_scalar(ncid, "rmax");
+        delta_r = (max_r - min_r) / (num_r - 1.0);
 
-        numZ = readIntScalar(ncid, "jz");
-        minZ = readDoubleScalar(ncid, "zmin");
-        maxZ = readDoubleScalar(ncid, "zmax");
-        deltaZ = (maxZ - minZ) / (numZ - 1.0);
+        num_z = read_int_scalar(ncid, "jz");
+        min_z = read_double_scalar(ncid, "zmin");
+        max_z = read_double_scalar(ncid, "zmax");
+        delta_z = (max_z - min_z) / (num_z - 1.0);
 
-        numPhi = readIntScalar(ncid, "kp");
+        num_phi = read_int_scalar(ncid, "kp");
 
-        nextcur = readIntScalar(ncid, "nextcur");
-        validateCoilCount(coil_currents.size(), nextcur);
+        nextcur = read_int_scalar(ncid, "nextcur");
+        validate_coil_count(coil_currents.size(), nextcur);
 
-        mgrid_mode = readStringScalar(ncid, "mgrid_mode");
+        mgrid_mode = read_string_scalar(ncid, "mgrid_mode");
 
         // Resize and make sure that the accumulation arrays are reset to zeros
         // if they contained previous contents from an earlier call.
-        bR.assign(numPhi * numZ * numR, 0.0);
-        bP.assign(numPhi * numZ * numR, 0.0);
-        bZ.assign(numPhi * numZ * numR, 0.0);
+        b_r.assign(num_phi * num_z * num_r, 0.0);
+        b_p.assign(num_phi * num_z * num_r, 0.0);
+        b_z.assign(num_phi * num_z * num_r, 0.0);
 
         // combine coil contributions, weighted by coil currents
         for (int i = 0; i < nextcur; ++i) {
             // for each coil group:
             // get 3d double array "br_%03d", "bp_%03d", "bz_%03d"
             // from i=1, 2, ..., nextcur
-            const std::vector<double> br_contrib = readArray3D(
-                ncid, "br_" + threeDigitField(i), numPhi, numZ, numR);
-            const std::vector<double> bp_contrib = readArray3D(
-                ncid, "bp_" + threeDigitField(i), numPhi, numZ, numR);
-            const std::vector<double> bz_contrib = readArray3D(
-                ncid, "bz_" + threeDigitField(i), numPhi, numZ, numR);
+            const std::vector<double> br_contrib = read_array_3d(
+                ncid, "br_" + three_digit_field(i), num_phi, num_z, num_r);
+            const std::vector<double> bp_contrib = read_array_3d(
+                ncid, "bp_" + three_digit_field(i), num_phi, num_z, num_r);
+            const std::vector<double> bz_contrib = read_array_3d(
+                ncid, "bz_" + three_digit_field(i), num_phi, num_z, num_r);
 
-            for (int index_phi = 0; index_phi < numPhi; ++index_phi) {
-                for (int index_z = 0; index_z < numZ; ++index_z) {
-                    for (int index_r = 0; index_r < numR; ++index_r) {
+            for (int index_phi = 0; index_phi < num_phi; ++index_phi) {
+                for (int index_z = 0; index_z < num_z; ++index_z) {
+                    for (int index_r = 0; index_r < num_r; ++index_r) {
                         const int linear_index =
-                            (index_phi * numZ + index_z) * numR + index_r;
+                            (index_phi * num_z + index_z) * num_r + index_r;
 
-                        bR[linear_index] +=
+                        b_r[linear_index] +=
                             br_contrib[linear_index] * coil_currents[i];
-                        bP[linear_index] +=
+                        b_p[linear_index] +=
                             bp_contrib[linear_index] * coil_currents[i];
-                        bZ[linear_index] +=
+                        b_z[linear_index] +=
                             bz_contrib[linear_index] * coil_currents[i];
                     }  // index_r
                 }  // index_z
@@ -221,12 +221,12 @@ void MgridProvider::loadFile(const std::string& filename,
     (void)filename;
     (void)coil_currents;
     throw std::runtime_error(
-        "MgridProvider::loadFile: NetCDF support is not compiled in "
+        "MgridProvider::load_file: NetCDF support is not compiled in "
         "(build with NetCDF available or pass -DVFIELD_USE_NETCDF=ON).");
 #endif  // VFIELD_HAVE_NETCDF
 }
 
-void MgridProvider::loadFields(const ResponseTable& table,
+void MgridProvider::load_fields(const ResponseTable& table,
                                const std::vector<double>& coil_currents) {
     if (coil_currents.size() != table.b_r.size()) {
         throw std::runtime_error(
@@ -237,17 +237,17 @@ void MgridProvider::loadFields(const ResponseTable& table,
 
     nfp = table.nfp;
 
-    numR = table.num_r;
-    minR = table.min_r;
-    maxR = table.max_r;
-    deltaR = (maxR - minR) / (numR - 1.0);
+    num_r = table.num_r;
+    min_r = table.min_r;
+    max_r = table.max_r;
+    delta_r = (max_r - min_r) / (num_r - 1.0);
 
-    numZ = table.num_z;
-    minZ = table.min_z;
-    maxZ = table.max_z;
-    deltaZ = (maxZ - minZ) / (numZ - 1.0);
+    num_z = table.num_z;
+    min_z = table.min_z;
+    max_z = table.max_z;
+    delta_z = (max_z - min_z) / (num_z - 1.0);
 
-    numPhi = table.num_phi;
+    num_phi = table.num_phi;
 
     nextcur = static_cast<int>(coil_currents.size());
 
@@ -257,18 +257,18 @@ void MgridProvider::loadFields(const ResponseTable& table,
         mgrid_mode = "R";
     }
 
-    const int num_grid_points = numPhi * numZ * numR;
-    bR.assign(num_grid_points, 0.0);
-    bP.assign(num_grid_points, 0.0);
-    bZ.assign(num_grid_points, 0.0);
+    const int num_grid_points = num_phi * num_z * num_r;
+    b_r.assign(num_grid_points, 0.0);
+    b_p.assign(num_grid_points, 0.0);
+    b_z.assign(num_grid_points, 0.0);
 
     // combine coil contributions, weighted by coil currents
     for (int i = 0; i < nextcur; ++i) {
         for (int linear_index = 0; linear_index < num_grid_points;
              ++linear_index) {
-            bR[linear_index] += table.b_r[i][linear_index] * coil_currents[i];
-            bP[linear_index] += table.b_p[i][linear_index] * coil_currents[i];
-            bZ[linear_index] += table.b_z[i][linear_index] * coil_currents[i];
+            b_r[linear_index] += table.b_r[i][linear_index] * coil_currents[i];
+            b_p[linear_index] += table.b_p[i][linear_index] * coil_currents[i];
+            b_z[linear_index] += table.b_z[i][linear_index] * coil_currents[i];
         }  // linear_index
     }  // nextcur
 
@@ -276,7 +276,7 @@ void MgridProvider::loadFields(const ResponseTable& table,
     has_fixed_field_ = false;
 }
 
-void MgridProvider::setFixedMagneticField(const std::vector<double>& fixed_br,
+void MgridProvider::set_fixed_magnetic_field(const std::vector<double>& fixed_br,
                                           const std::vector<double>& fixed_bp,
                                           const std::vector<double>& fixed_bz) {
     // copy into local storage

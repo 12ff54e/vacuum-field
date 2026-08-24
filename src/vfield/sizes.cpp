@@ -1,6 +1,6 @@
 // sizes.cpp — derived grid/mode counts and integration weights.
 //
-// Direct port of vmecpp's Sizes::computeDerivedSizes (common/sizes/sizes.cc)
+// Direct port of vmecpp's Sizes::compute_derived_sizes (common/sizes/sizes.cc)
 // with the absl CHECKs replaced by std::invalid_argument. The count
 // adjustments must stay verbatim: every golden comparison depends on them.
 #include "vfield/common/sizes.hpp"
@@ -18,12 +18,12 @@ Sizes::Sizes(bool lasym, int nfp, int mpol, int ntor, int ntheta, int nzeta)
       ntor(ntor),
       ntheta(ntheta),
       nZeta(nzeta) {
-    computeDerivedSizes();
+    compute_derived_sizes();
 }
 
 // Assuming that the key parameters defining the array sizes etc. have been
 // set, compute the derived sizes like actual array sizes etc.
-void Sizes::computeDerivedSizes() {
+void Sizes::compute_derived_sizes() {
     if (nfp < 1) {
         throw std::invalid_argument(
             "input variable 'nfp' needs to be >= 1, but is " +

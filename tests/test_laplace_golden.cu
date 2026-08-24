@@ -39,18 +39,18 @@ using vfield::SingularIntegralsOperator;
 using vfield::Sizes;
 using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
-using vfield::test::flatArray;
+using vfield::test::flat_array;
 using vfield::test::is_close_rel_abs;
-using vfield::test::loadGolden;
+using vfield::test::load_golden;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
 const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
-std::string jsonPath(const std::string& checkpoint, int iter) {
+std::string json_path(const std::string& checkpoint, int iter) {
     std::ostringstream oss;
     oss << DATA_DIR << checkpoint << "/" << checkpoint << "_00015_"
         << std::setw(6) << std::setfill('0') << iter
@@ -60,7 +60,7 @@ std::string jsonPath(const std::string& checkpoint, int iter) {
 
 // Runs the FULL pipeline of the given iteration and performs the
 // fourp/fouri/solver comparisons (the dumps only exist for full updates).
-void runFullUpdate(int iter,
+void run_full_update(int iter,
                    const std::vector<double>& rcc,
                    const std::vector<double>& rss,
                    const std::vector<double>& zsc,
@@ -73,7 +73,7 @@ void runFullUpdate(int iter,
                    RegularizedIntegralsOperator<double>& ri,
                    LaplaceSolverOperator<double>& ls,
                    const std::vector<double>& extcur) {
-    const json::Value vacuum = loadGolden(jsonPath("vac1n_vacuum", iter));
+    const json::Value vacuum = load_golden(json_path("vac1n_vacuum", iter));
     (void)extcur;
 
     Sizes sizes(false, 5, 5, 4, 16, 36);
@@ -86,12 +86,12 @@ void runFullUpdate(int iter,
     const int sign_j =
         static_cast<int>(static_cast<double>(vacuum.at("signgs")));
 
-    auto d_rcc = toDevice(rcc);
-    auto d_rss = toDevice(rss);
-    auto d_zsc = toDevice(zsc);
-    auto d_zcs = toDevice(zcs);
-    auto d_raxis = toDevice(raxis);
-    auto d_zaxis = toDevice(zaxis);
+    auto d_rcc = to_device(rcc);
+    auto d_rss = to_device(rss);
+    auto d_zsc = to_device(zsc);
+    auto d_zcs = to_device(zcs);
+    auto d_raxis = to_device(raxis);
+    auto d_zaxis = to_device(zaxis);
 
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
               d_zcs.data(), nullptr, nullptr, sign_j, full_update);
@@ -99,21 +99,21 @@ void runFullUpdate(int iter,
         static_cast<double>(vacuum.at("plascur")) /
         (4.0 * std::numbers::pi * 1.0e-7);
     ef.update(d_raxis.data(), d_zaxis.data(), net_toroidal_current);
-    si.update(ef.bDotN(), full_update);
+    si.update(ef.b_dot_n(), full_update);
 
     if (full_update) {
-        ri.update(ef.bDotN());
-        ls.transformGreensFunctionDerivative(ri.greenp());
+        ri.update(ef.b_dot_n());
+        ls.transform_greens_function_derivative(ri.greenp());
 
         // vac1n_fourp: grpmn regularized part (2*pi scale) vs
         // Fortran total minus the singular part (2*pi/nfp scale).
         {
-            const json::Value fourp = loadGolden(jsonPath("vac1n_fourp", iter));
+            const json::Value fourp = load_golden(json_path("vac1n_fourp", iter));
             const double tol = 1e-9;
             const double scale_regular = 2.0 * std::numbers::pi;
             const double scale_singular = 2.0 * std::numbers::pi / sizes.nfp;
-            const auto grpmn = toHost(ls.grpmnSin(), mnpd * sizes.nZnT);
-            const auto singular = toHost(si.grpmnSin(), mnpd * sizes.nZnT);
+            const auto grpmn = to_host(ls.grpmn_sin(), mnpd * sizes.nZnT);
+            const auto singular = to_host(si.grpmn_sin(), mnpd * sizes.nZnT);
             bool ok = true;
             for (int n = 0; n < nf + 1; ++n) {
                 for (int m = 0; m < mf + 1; ++m) {
@@ -153,15 +153,15 @@ void runFullUpdate(int iter,
                   ("fourp grpmn (regularized) iter " + std::to_string(iter)));
         }
 
-        ls.symmetriseSourceTerm(ri.gstore());
-        ls.accumulateFullGrpmn(si.grpmnSin(), si.grpmnCos());
+        ls.symmetrise_source_term(ri.gstore());
+        ls.accumulate_full_grpmn(si.grpmn_sin(), si.grpmn_cos());
 
         // Post-accumulation total vs fourp directly (2*pi scale).
         {
-            const json::Value fourp = loadGolden(jsonPath("vac1n_fourp", iter));
+            const json::Value fourp = load_golden(json_path("vac1n_fourp", iter));
             const double tol = 1e-9;
             const double scale = 2.0 * std::numbers::pi;
-            const auto grpmn = toHost(ls.grpmnSin(), mnpd * sizes.nZnT);
+            const auto grpmn = to_host(ls.grpmn_sin(), mnpd * sizes.nZnT);
             bool ok = true;
             for (int n = 0; n < nf + 1; ++n) {
                 for (int m = 0; m < mf + 1; ++m) {
@@ -190,16 +190,16 @@ void runFullUpdate(int iter,
             check(ok, ("fourp grpmn (total) iter " + std::to_string(iter)));
         }
 
-        ls.performToroidalFourierTransforms();
+        ls.perform_toroidal_fourier_transforms();
 
         // vac1n_fouri: source, bcos/bsin, actemp/astemp (all 2*pi).
         {
-            const json::Value fouri = loadGolden(jsonPath("vac1n_fouri", iter));
+            const json::Value fouri = load_golden(json_path("vac1n_fouri", iter));
             const double tol = 1e-9;
             const double scale = 2.0 * std::numbers::pi;
 
             const auto gstore_symm =
-                toHost(ls.gstoreSymm(), sizes.nThetaReduced * sizes.nZeta);
+                to_host(ls.gstore_symm(), sizes.nThetaReduced * sizes.nZeta);
             bool ok = true;
             for (int l = 0; l < sizes.nThetaReduced; ++l) {
                 for (int k = 0; k < sizes.nZeta; ++k) {
@@ -213,9 +213,9 @@ void runFullUpdate(int iter,
             check(ok, ("fouri source iter " + std::to_string(iter)));
 
             const auto bcos =
-                toHost(ls.bcos(), (2 * nf + 1) * sizes.nThetaReduced);
+                to_host(ls.bcos(), (2 * nf + 1) * sizes.nThetaReduced);
             const auto bsin =
-                toHost(ls.bsin(), (2 * nf + 1) * sizes.nThetaReduced);
+                to_host(ls.bsin(), (2 * nf + 1) * sizes.nThetaReduced);
             ok = true;
             for (int n = 0; n < nf + 1; ++n) {
                 for (int l = 0; l < sizes.nThetaReduced; ++l) {
@@ -246,9 +246,9 @@ void runFullUpdate(int iter,
             check(ok, ("fouri bcos/bsin iter " + std::to_string(iter)));
 
             const auto actemp =
-                toHost(ls.actemp(), mnpd * (2 * nf + 1) * sizes.nThetaEff);
+                to_host(ls.actemp(), mnpd * (2 * nf + 1) * sizes.nThetaEff);
             const auto astemp =
-                toHost(ls.astemp(), mnpd * (2 * nf + 1) * sizes.nThetaEff);
+                to_host(ls.astemp(), mnpd * (2 * nf + 1) * sizes.nThetaEff);
             ok = true;
             for (int mn = 0; mn < mnpd; ++mn) {
                 const int np = mn / (mf + 1);
@@ -292,24 +292,24 @@ void runFullUpdate(int iter,
             check(ok, ("fouri actemp/astemp iter " + std::to_string(iter)));
         }
 
-        ls.performPoloidalFourierTransforms();
-        ls.buildMatrix();
+        ls.perform_poloidal_fourier_transforms();
+        ls.build_matrix();
 
         // vac1n_fouri bvec + amatrix and vac1n_solver potvac_in/amatrix
         // (scale 2*pi*(2*pi)^2); the golden bvec/amatrix compare the
         // singular-accumulated, gauge-zeroed quantities.
         {
-            const json::Value fouri = loadGolden(jsonPath("vac1n_fouri", iter));
+            const json::Value fouri = load_golden(json_path("vac1n_fouri", iter));
             const json::Value solver =
-                loadGolden(jsonPath("vac1n_solver", iter));
+                load_golden(json_path("vac1n_solver", iter));
             const double tol = 1e-9;
             const double scale = 2.0 * std::numbers::pi * 4.0 *
                                  std::numbers::pi * std::numbers::pi;
 
             // Assemble the RHS like SolveForPotential: bvec_sin +
             // singular/nfp, gauge-zeroed.
-            const auto bvec_sin = toHost(ls.bvecSin(), mnpd);
-            const auto singular = toHost(si.bvecSin(), mnpd);
+            const auto bvec_sin = to_host(ls.bvec_sin(), mnpd);
+            const auto singular = to_host(si.bvec_sin(), mnpd);
             std::vector<double> bvec_full(mnpd);
             for (int mn = 0; mn < mnpd; ++mn) {
                 bvec_full[mn] = bvec_sin[mn] + singular[mn] / sizes.nfp;
@@ -337,7 +337,7 @@ void runFullUpdate(int iter,
 
             // amatrix: golden[row][col] vs matrix[col*mnpd + row] (the flat
             // layout vmecpp's LAPACK call consumed).
-            const auto matrix = toHost(ls.matrix(), mnpd * mnpd);
+            const auto matrix = to_host(ls.matrix(), mnpd * mnpd);
             ok = true;
             for (int mn = 0; mn < mnpd; ++mn) {
                 const int n = mn / (mf + 1);
@@ -362,13 +362,13 @@ void runFullUpdate(int iter,
         }
 
         // Solve and cross-check the potential against Fortran LAPACK.
-        ls.decomposeMatrix();
-        ls.solveForPotential(si.bvecSin());
+        ls.decompose_matrix();
+        ls.solve_for_potential(si.bvec_sin());
         {
             const json::Value solver =
-                loadGolden(jsonPath("vac1n_solver", iter));
+                load_golden(json_path("vac1n_solver", iter));
             const double tol = 1e-9;
-            const auto pot = toHost(ls.solution(), mnpd);
+            const auto pot = to_host(ls.solution(), mnpd);
             bool ok = true;
             for (int mn = 0; mn < mnpd; ++mn) {
                 if (!is_close_rel_abs(
@@ -390,20 +390,20 @@ int main() {
     // pipeline once, run the full update (53), then the partial update (54)
     // reusing the stale matrix/bvec_sin with the fresh singular RHS.
     {
-        const json::Value vacuum = loadGolden(jsonPath("vac1n_vacuum", 53));
+        const json::Value vacuum = load_golden(json_path("vac1n_vacuum", 53));
 
         Sizes sizes(false, 5, 5, 4, 16, 36);
         FourierBasis fb(sizes);
 
         std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
-        fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+        fb.cos_to_cc_ss(flat_array(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
                      sizes.mpol);
         std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
-        fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+        fb.sin_to_sc_cs(flat_array(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                      sizes.mpol);
 
         MgridProvider mgrid;
-        mgrid.loadFile(DATA_DIR + "../mgrid_cth_like.nc",
+        mgrid.load_file(DATA_DIR + "../mgrid_cth_like.nc",
                        std::vector<double>{4700.0, 1000.0});
 
         FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);
@@ -418,31 +418,31 @@ int main() {
         const int mnpd = (2 * nf + 1) * (mf + 1);
 
         const std::vector<double> raxis_53 =
-            flatArray(vacuum.at("raxis_nestor"));
+            flat_array(vacuum.at("raxis_nestor"));
         const std::vector<double> zaxis_53 =
-            flatArray(vacuum.at("zaxis_nestor"));
+            flat_array(vacuum.at("zaxis_nestor"));
         const std::vector<double> extcur{4700.0, 1000.0};
 
-        runFullUpdate(53, rcc, rss, zsc, zcs, raxis_53, zaxis_53, sg, ef, si,
+        run_full_update(53, rcc, rss, zsc, zcs, raxis_53, zaxis_53, sg, ef, si,
                       ri, ls, extcur);
 
         // Partial update (iteration 54): fresh geometry/external/singular,
         // stale Laplace state, solve with the stale factor.
-        const json::Value vacuum_54 = loadGolden(jsonPath("vac1n_vacuum", 54));
+        const json::Value vacuum_54 = load_golden(json_path("vac1n_vacuum", 54));
         const int sign_j =
             static_cast<int>(static_cast<double>(vacuum_54.at("signgs")));
         std::vector<double> rcc_54(sizes.mnsize), rss_54(sizes.mnsize);
-        fb.cosToCcSs(flatArray(vacuum_54.at("rmnc")), rcc_54, rss_54,
+        fb.cos_to_cc_ss(flat_array(vacuum_54.at("rmnc")), rcc_54, rss_54,
                      sizes.ntor, sizes.mpol);
         std::vector<double> zsc_54(sizes.mnsize), zcs_54(sizes.mnsize);
-        fb.sinToScCs(flatArray(vacuum_54.at("zmns")), zsc_54, zcs_54,
+        fb.sin_to_sc_cs(flat_array(vacuum_54.at("zmns")), zsc_54, zcs_54,
                      sizes.ntor, sizes.mpol);
-        auto d_rcc = toDevice(rcc_54);
-        auto d_rss = toDevice(rss_54);
-        auto d_zsc = toDevice(zsc_54);
-        auto d_zcs = toDevice(zcs_54);
-        auto d_raxis = toDevice(flatArray(vacuum_54.at("raxis_nestor")));
-        auto d_zaxis = toDevice(flatArray(vacuum_54.at("zaxis_nestor")));
+        auto d_rcc = to_device(rcc_54);
+        auto d_rss = to_device(rss_54);
+        auto d_zsc = to_device(zsc_54);
+        auto d_zcs = to_device(zcs_54);
+        auto d_raxis = to_device(flat_array(vacuum_54.at("raxis_nestor")));
+        auto d_zaxis = to_device(flat_array(vacuum_54.at("zaxis_nestor")));
 
         sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
                   d_zcs.data(), nullptr, nullptr, sign_j, false);
@@ -450,12 +450,12 @@ int main() {
             static_cast<double>(vacuum_54.at("plascur")) /
             (4.0 * std::numbers::pi * 1.0e-7);
         ef.update(d_raxis.data(), d_zaxis.data(), net_toroidal_current);
-        si.update(ef.bDotN(), false);
-        ls.solveForPotential(si.bvecSin());
+        si.update(ef.b_dot_n(), false);
+        ls.solve_for_potential(si.bvec_sin());
 
-        const json::Value solver_54 = loadGolden(jsonPath("vac1n_solver", 54));
+        const json::Value solver_54 = load_golden(json_path("vac1n_solver", 54));
         const double tol = 1e-9;
-        const auto pot = toHost(ls.solution(), mnpd);
+        const auto pot = to_host(ls.solution(), mnpd);
         bool ok = true;
         for (int mn = 0; mn < mnpd; ++mn) {
             if (!is_close_rel_abs(

@@ -27,7 +27,7 @@ double prand(int* state) {
 // (column-major), writing x into b.
 // b is taken by reference (the solution is written into it); the matrix
 // copy is fine by value.
-void referenceSolve(std::vector<double> a, std::vector<double>& b, int n) {
+void reference_solve(std::vector<double> a, std::vector<double>& b, int n) {
     for (int k = 0; k < n; ++k) {
         int p = k;
         for (int i = k + 1; i < n; ++i) {
@@ -86,7 +86,7 @@ int main() {
 
         // Cross-check the residual against the brute-force reference.
         std::vector<double> x_ref = b;
-        referenceSolve(a, x_ref, n);
+        reference_solve(a, x_ref, n);
         ok = true;
         for (int i = 0; i < n; ++i) {
             if (!is_close_rel_abs(x_ref[i], x[i], 1e-10)) ok = false;

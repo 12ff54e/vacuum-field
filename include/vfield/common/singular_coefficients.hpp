@@ -1,6 +1,6 @@
 // singular_coefficients.hpp — cmn/cmns expansion coefficients (host).
 //
-// Port of vmecpp's SingularIntegrals::computeCoefficients: the expansion
+// Port of vmecpp's SingularIntegrals::compute_coefficients: the expansion
 // coefficients of the singular-kernel angular dependence (cmn, TNOV
 // Algorithm 1) and their surface-weighted average (cmns, TNOV eq. 6.291).
 // Layout: ((l * (nf + 1) + n) * (mf + 1) + m) with l in [0, nf+mf].
@@ -21,7 +21,7 @@ class SingularCoefficients {
     std::vector<double> cmns;
 
    private:
-    void computeCoefficients();
+    void compute_coefficients();
 
     int nf_;
     int mf_;

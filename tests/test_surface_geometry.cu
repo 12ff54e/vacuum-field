@@ -22,8 +22,8 @@ using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
 using vfield::test::max_rel_diff;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
@@ -35,7 +35,7 @@ constexpr int NZETA = 36;
 constexpr int SIGN_J = -1;
 
 // Synthetic boundary coefficients with every (m,n) slot occupied.
-void makeCoefficients(std::vector<double>* rcc,
+void make_coefficients(std::vector<double>* rcc,
                       std::vector<double>* rss,
                       std::vector<double>* zsc,
                       std::vector<double>* zcs) {
@@ -68,7 +68,7 @@ struct CpuSurface {
     std::vector<double> snr, snv, snz, guu, guv, gvv, auu, auv, avv, drv;
 };
 
-CpuSurface cpuReference(const std::vector<double>& rcc,
+CpuSurface cpu_reference(const std::vector<double>& rcc,
                         const std::vector<double>& rss,
                         const std::vector<double>& zsc,
                         const std::vector<double>& zcs,
@@ -205,73 +205,73 @@ CpuSurface cpuReference(const std::vector<double>& rcc,
 }
 
 template <class T>
-void runPrecision(double tol) {
+void run_precision(double tol) {
     Sizes sizes(false, NFP, MPOL, NTOR, NTHETA, NZETA);
     FourierBasis fb(sizes);
     FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<T> sg(sizes, fbd);
 
     std::vector<double> rcc, rss, zsc, zcs;
-    makeCoefficients(&rcc, &rss, &zsc, &zcs);
+    make_coefficients(&rcc, &rss, &zsc, &zcs);
     std::vector<T> rcc_t(rcc.begin(), rcc.end());
     std::vector<T> rss_t(rss.begin(), rss.end());
     std::vector<T> zsc_t(zsc.begin(), zsc.end());
     std::vector<T> zcs_t(zcs.begin(), zcs.end());
 
-    auto d_rcc = toDevice(rcc_t);
-    auto d_rss = toDevice(rss_t);
-    auto d_zsc = toDevice(zsc_t);
-    auto d_zcs = toDevice(zcs_t);
+    auto d_rcc = to_device(rcc_t);
+    auto d_rss = to_device(rss_t);
+    auto d_zsc = to_device(zsc_t);
+    auto d_zcs = to_device(zcs_t);
 
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
               d_zcs.data(), nullptr, nullptr, SIGN_J, true);
 
-    const CpuSurface ref = cpuReference(rcc, rss, zsc, zcs, sizes);
+    const CpuSurface ref = cpu_reference(rcc, rss, zsc, zcs, sizes);
     const int n_full = sizes.nThetaEven * sizes.nZeta;
 
-    check(max_rel_diff(toHost(sg.r1b(), n_full), ref.r1b) < tol,
+    check(max_rel_diff(to_host(sg.r1b(), n_full), ref.r1b) < tol,
           "r1b full surface");
-    check(max_rel_diff(toHost(sg.z1b(), n_full), ref.z1b) < tol,
+    check(max_rel_diff(to_host(sg.z1b(), n_full), ref.z1b) < tol,
           "z1b full surface (mirror)");
-    check(max_rel_diff(toHost(sg.rcosuv(), n_full), ref.rcosuv) < tol,
+    check(max_rel_diff(to_host(sg.rcosuv(), n_full), ref.rcosuv) < tol,
           "rcosuv");
-    check(max_rel_diff(toHost(sg.rsinuv(), n_full), ref.rsinuv) < tol,
+    check(max_rel_diff(to_host(sg.rsinuv(), n_full), ref.rsinuv) < tol,
           "rsinuv");
-    check(max_rel_diff(toHost(sg.rzb2(), n_full), ref.rzb2) < tol, "rzb2");
-    check(max_rel_diff(toHost(sg.rub(), sizes.nZnT), ref.rub) < tol, "rub");
-    check(max_rel_diff(toHost(sg.rvb(), sizes.nZnT), ref.rvb) < tol, "rvb");
-    check(max_rel_diff(toHost(sg.zub(), sizes.nZnT), ref.zub) < tol, "zub");
-    check(max_rel_diff(toHost(sg.zvb(), sizes.nZnT), ref.zvb) < tol, "zvb");
-    check(max_rel_diff(toHost(sg.ruu(), sizes.nZnT), ref.ruu) < tol, "ruu");
-    check(max_rel_diff(toHost(sg.ruv(), sizes.nZnT), ref.ruv) < tol, "ruv");
-    check(max_rel_diff(toHost(sg.rvv(), sizes.nZnT), ref.rvv) < tol, "rvv");
-    check(max_rel_diff(toHost(sg.zuu(), sizes.nZnT), ref.zuu) < tol, "zuu");
-    check(max_rel_diff(toHost(sg.zuv(), sizes.nZnT), ref.zuv) < tol, "zuv");
-    check(max_rel_diff(toHost(sg.zvv(), sizes.nZnT), ref.zvv) < tol, "zvv");
-    check(max_rel_diff(toHost(sg.snr(), sizes.nZnT), ref.snr) < tol, "snr");
-    check(max_rel_diff(toHost(sg.snv(), sizes.nZnT), ref.snv) < tol, "snv");
-    check(max_rel_diff(toHost(sg.snz(), sizes.nZnT), ref.snz) < tol, "snz");
-    check(max_rel_diff(toHost(sg.guu(), sizes.nZnT), ref.guu) < tol, "guu");
-    check(max_rel_diff(toHost(sg.guv(), sizes.nZnT), ref.guv) < tol, "guv");
-    check(max_rel_diff(toHost(sg.gvv(), sizes.nZnT), ref.gvv) < tol, "gvv");
-    check(max_rel_diff(toHost(sg.auu(), sizes.nZnT), ref.auu) < tol, "auu");
-    check(max_rel_diff(toHost(sg.auv(), sizes.nZnT), ref.auv) < tol, "auv");
-    check(max_rel_diff(toHost(sg.avv(), sizes.nZnT), ref.avv) < tol, "avv");
-    check(max_rel_diff(toHost(sg.drv(), sizes.nZnT), ref.drv) < tol, "drv");
+    check(max_rel_diff(to_host(sg.rzb2(), n_full), ref.rzb2) < tol, "rzb2");
+    check(max_rel_diff(to_host(sg.rub(), sizes.nZnT), ref.rub) < tol, "rub");
+    check(max_rel_diff(to_host(sg.rvb(), sizes.nZnT), ref.rvb) < tol, "rvb");
+    check(max_rel_diff(to_host(sg.zub(), sizes.nZnT), ref.zub) < tol, "zub");
+    check(max_rel_diff(to_host(sg.zvb(), sizes.nZnT), ref.zvb) < tol, "zvb");
+    check(max_rel_diff(to_host(sg.ruu(), sizes.nZnT), ref.ruu) < tol, "ruu");
+    check(max_rel_diff(to_host(sg.ruv(), sizes.nZnT), ref.ruv) < tol, "ruv");
+    check(max_rel_diff(to_host(sg.rvv(), sizes.nZnT), ref.rvv) < tol, "rvv");
+    check(max_rel_diff(to_host(sg.zuu(), sizes.nZnT), ref.zuu) < tol, "zuu");
+    check(max_rel_diff(to_host(sg.zuv(), sizes.nZnT), ref.zuv) < tol, "zuv");
+    check(max_rel_diff(to_host(sg.zvv(), sizes.nZnT), ref.zvv) < tol, "zvv");
+    check(max_rel_diff(to_host(sg.snr(), sizes.nZnT), ref.snr) < tol, "snr");
+    check(max_rel_diff(to_host(sg.snv(), sizes.nZnT), ref.snv) < tol, "snv");
+    check(max_rel_diff(to_host(sg.snz(), sizes.nZnT), ref.snz) < tol, "snz");
+    check(max_rel_diff(to_host(sg.guu(), sizes.nZnT), ref.guu) < tol, "guu");
+    check(max_rel_diff(to_host(sg.guv(), sizes.nZnT), ref.guv) < tol, "guv");
+    check(max_rel_diff(to_host(sg.gvv(), sizes.nZnT), ref.gvv) < tol, "gvv");
+    check(max_rel_diff(to_host(sg.auu(), sizes.nZnT), ref.auu) < tol, "auu");
+    check(max_rel_diff(to_host(sg.auv(), sizes.nZnT), ref.auv) < tol, "auv");
+    check(max_rel_diff(to_host(sg.avv(), sizes.nZnT), ref.avv) < tol, "avv");
+    check(max_rel_diff(to_host(sg.drv(), sizes.nZnT), ref.drv) < tol, "drv");
 
     // Also exercise the no-full-update path (first derivatives only).
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
               d_zcs.data(), nullptr, nullptr, SIGN_J, false);
-    check(max_rel_diff(toHost(sg.rub(), sizes.nZnT), ref.rub) < tol,
+    check(max_rel_diff(to_host(sg.rub(), sizes.nZnT), ref.rub) < tol,
           "rub (no full update)");
-    check(max_rel_diff(toHost(sg.guv(), sizes.nZnT), ref.guv) < tol,
+    check(max_rel_diff(to_host(sg.guv(), sizes.nZnT), ref.guv) < tol,
           "guv (no full update)");
 }
 
 }  // namespace
 
 int main() {
-    runPrecision<double>(1e-12);
-    runPrecision<float>(1e-4);
+    run_precision<double>(1e-12);
+    run_precision<float>(1e-4);
     return summary();
 }

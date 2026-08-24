@@ -29,24 +29,24 @@ using vfield::RegularizedIntegralsOperator;
 using vfield::Sizes;
 using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
-using vfield::test::flatArray;
+using vfield::test::flat_array;
 using vfield::test::is_close_rel_abs;
-using vfield::test::loadGolden;
+using vfield::test::load_golden;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 int main() {
     const int iter = 53;
-    const json::Value vacuum = loadGolden(
+    const json::Value vacuum = load_golden(
         DATA_DIR +
         "vac1n_vacuum/vac1n_vacuum_00015_000053_01.cth_like_free_bdy.json");
-    const json::Value greenf = loadGolden(
+    const json::Value greenf = load_golden(
         DATA_DIR +
         "vac1n_greenf/vac1n_greenf_00015_000053_01.cth_like_free_bdy.json");
-    const json::Value precal = loadGolden(
+    const json::Value precal = load_golden(
         DATA_DIR +
         "vac1n_precal/vac1n_precal_00015_000053_01.cth_like_free_bdy.json");
 
@@ -59,14 +59,14 @@ int main() {
     FourierBasis fb(sizes);
 
     std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
-    fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+    fb.cos_to_cc_ss(flat_array(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
                  sizes.mpol);
     std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
-    fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+    fb.sin_to_sc_cs(flat_array(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                  sizes.mpol);
 
     MgridProvider mgrid;
-    mgrid.loadFile(DATA_DIR + "../mgrid_cth_like.nc",
+    mgrid.load_file(DATA_DIR + "../mgrid_cth_like.nc",
                    std::vector<double>{4700.0, 1000.0});
 
     FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);
@@ -74,12 +74,12 @@ int main() {
     ExternalFieldOperator<double> ef(sizes, sg, mgrid);
     RegularizedIntegralsOperator<double> ri(sizes, sg);
 
-    auto d_rcc = toDevice(rcc);
-    auto d_rss = toDevice(rss);
-    auto d_zsc = toDevice(zsc);
-    auto d_zcs = toDevice(zcs);
-    auto d_raxis = toDevice(flatArray(vacuum.at("raxis_nestor")));
-    auto d_zaxis = toDevice(flatArray(vacuum.at("zaxis_nestor")));
+    auto d_rcc = to_device(rcc);
+    auto d_rss = to_device(rss);
+    auto d_zsc = to_device(zsc);
+    auto d_zcs = to_device(zcs);
+    auto d_raxis = to_device(flat_array(vacuum.at("raxis_nestor")));
+    auto d_zaxis = to_device(flat_array(vacuum.at("zaxis_nestor")));
 
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
               d_zcs.data(), nullptr, nullptr, sign_j, full_update);
@@ -87,13 +87,13 @@ int main() {
         static_cast<double>(vacuum.at("plascur")) /
         (4.0 * std::numbers::pi * 1.0e-7);
     ef.update(d_raxis.data(), d_zaxis.data(), net_toroidal_current);
-    ri.update(ef.bDotN());
+    ri.update(ef.b_dot_n());
 
     const double tol = 5e-10;
 
     // tanu/tanv tables (vac1n_precal, direct comparison).
-    const auto tanu = toHost(ri.tanu(), sizes.nThetaEven);
-    const auto tanv = toHost(ri.tanv(), sizes.nZeta);
+    const auto tanu = to_host(ri.tanu(), sizes.nThetaEven);
+    const auto tanv = to_host(ri.tanv(), sizes.nZeta);
     bool tan_ok = true;
     for (int l = 0; l < sizes.nThetaEven; ++l) {
         if (!is_close_rel_abs(static_cast<double>(precal.at("tanu_1d")[l]),
@@ -112,7 +112,7 @@ int main() {
     // gstore: scale 4 pi^2 / (2 pi/nfp), Fortran [k][l] layout.
     const double gstore_scale = 4.0 * std::numbers::pi * std::numbers::pi /
                                 (2.0 * std::numbers::pi / sizes.nfp);
-    const auto gstore = toHost(ri.gstore(), sizes.nThetaEven * sizes.nZeta);
+    const auto gstore = to_host(ri.gstore(), sizes.nThetaEven * sizes.nZeta);
     bool gstore_ok = true;
     for (int kl = 0; kl < sizes.nThetaEven * sizes.nZeta; ++kl) {
         const int l = kl / sizes.nZeta;
@@ -128,7 +128,7 @@ int main() {
     // greenp: scale 1/(2 pi/nfp), Fortran [k][l][kp][lp] layout.
     const double greenp_scale = 1.0 / (2.0 * std::numbers::pi / sizes.nfp);
     const auto greenp_host =
-        toHost(ri.greenp(), sizes.nZnT * sizes.nThetaEven * sizes.nZeta);
+        to_host(ri.greenp(), sizes.nZnT * sizes.nThetaEven * sizes.nZeta);
     bool greenp_ok = true;
     for (int klp = 0; klp < sizes.nZnT; ++klp) {
         const int lp = klp / sizes.nZeta;

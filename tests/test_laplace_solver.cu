@@ -23,13 +23,13 @@ using vfield::Sizes;
 using vfield::test::check;
 using vfield::test::is_close_rel_abs;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
 template <class T>
-void runCase(bool lasym, int m0, int n0, double tol) {
+void run_case(bool lasym, int m0, int n0, double tol) {
     const int nfp = 5;
     const int mpol = 4;
     const int ntor = 4;
@@ -62,8 +62,8 @@ void runCase(bool lasym, int m0, int n0, double tol) {
             }
         }
     }
-    auto d_greenp = toDevice(greenp);
-    ls.transformGreensFunctionDerivative(d_greenp.data());
+    auto d_greenp = to_device(greenp);
+    ls.transform_greens_function_derivative(d_greenp.data());
 
     // Expected: the basis normalization makes the trapezoidal DFT of sin^2 /
     // cos^2 yield 0.5 per mode at the injected (m0, +n0) slot.
@@ -72,7 +72,7 @@ void runCase(bool lasym, int m0, int n0, double tol) {
 
     bool ok = true;
     if (!lasym) {
-        const auto grpmn = toHost(ls.grpmnSin(), mnpd * sizes.nZnT);
+        const auto grpmn = to_host(ls.grpmn_sin(), mnpd * sizes.nZnT);
         for (int klpRel = 0; klpRel < sizes.nZnT; ++klpRel) {
             if (!is_close_rel_abs(
                     EXPECTED,
@@ -96,7 +96,7 @@ void runCase(bool lasym, int m0, int n0, double tol) {
             }
         }
     } else {
-        const auto grpmn = toHost(ls.grpmnCos(), mnpd * sizes.nZnT);
+        const auto grpmn = to_host(ls.grpmn_cos(), mnpd * sizes.nZnT);
         for (int klpRel = 0; klpRel < sizes.nZnT; ++klpRel) {
             if (!is_close_rel_abs(
                     EXPECTED,
@@ -116,10 +116,10 @@ void runCase(bool lasym, int m0, int n0, double tol) {
 }  // namespace
 
 int main() {
-    runCase<double>(false, 1, 1, 1e-12);
-    runCase<double>(false, 3, 4, 1e-12);
-    runCase<double>(false, 0, 2, 1e-12);
-    runCase<double>(true, 2, 3, 1e-12);
-    runCase<float>(false, 1, 1, 1e-4);
+    run_case<double>(false, 1, 1, 1e-12);
+    run_case<double>(false, 3, 4, 1e-12);
+    run_case<double>(false, 0, 2, 1e-12);
+    run_case<double>(true, 2, 3, 1e-12);
+    run_case<float>(false, 1, 1, 1e-4);
     return summary();
 }

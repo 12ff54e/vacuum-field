@@ -42,7 +42,7 @@ int main() {
         for (int l = 0; l < sizes.nThetaReduced; ++l) {
             const double theta = 2.0 * std::numbers::pi * l / sizes.nThetaEven;
             const int idx_ml =
-                FourierBasis::poloidalBasisIndex(m, l, sizes.mnyq2 + 1);
+                FourierBasis::poloidal_basis_index(m, l, sizes.mnyq2 + 1);
             max_err = std::max(max_err,
                                std::fabs(fb.cosmu[idx_ml] -
                                          std::cos(m * theta) * fb.mscale[m]));
@@ -55,7 +55,7 @@ int main() {
         const double zeta = 2.0 * std::numbers::pi * k / sizes.nZeta;
         for (int n = 0; n <= sizes.nnyq2; ++n) {
             const int idx_kn =
-                FourierBasis::toroidalBasisIndex(n, k, sizes.nZeta);
+                FourierBasis::toroidal_basis_index(n, k, sizes.nZeta);
             max_err =
                 std::max(max_err, std::fabs(fb.cosnv[idx_kn] -
                                             std::cos(n * zeta) * fb.nscale[n]));
@@ -72,7 +72,7 @@ int main() {
     for (int m = 0; m <= sizes.mnyq2; ++m) {
         for (int l = 0; l < sizes.nThetaReduced; ++l) {
             const int idx =
-                FourierBasis::poloidalBasisIndex(m, l, sizes.mnyq2 + 1);
+                FourierBasis::poloidal_basis_index(m, l, sizes.mnyq2 + 1);
             max_err = std::max(max_err,
                                std::fabs(fb.cosmum[idx] - m * fb.cosmu[idx]));
             max_err = std::max(max_err,
@@ -81,7 +81,7 @@ int main() {
     }
     for (int n = 0; n <= sizes.nnyq2; ++n) {
         for (int k = 0; k < sizes.nZeta; ++k) {
-            const int idx = FourierBasis::toroidalBasisIndex(n, k, sizes.nZeta);
+            const int idx = FourierBasis::toroidal_basis_index(n, k, sizes.nZeta);
             max_err = std::max(
                 max_err,
                 std::fabs(fb.cosnvn[idx] - n * sizes.nfp * fb.cosnv[idx]));
@@ -100,9 +100,9 @@ int main() {
             double sum = 0.0;
             for (int l = 0; l < sizes.nThetaReduced; ++l) {
                 const int i1 =
-                    FourierBasis::poloidalBasisIndex(m, l, sizes.mnyq2 + 1);
+                    FourierBasis::poloidal_basis_index(m, l, sizes.mnyq2 + 1);
                 const int i2 =
-                    FourierBasis::poloidalBasisIndex(m2, l, sizes.mnyq2 + 1);
+                    FourierBasis::poloidal_basis_index(m2, l, sizes.mnyq2 + 1);
                 sum += fb.cosmui[i1] * fb.cosmu[i2];
             }
             const double expect = (m == m2) ? 1.0 / sizes.nZeta : 0.0;
@@ -116,27 +116,27 @@ int main() {
     check(vfield::test::failures() == 0, "poloidal integration orthogonality");
 
     // cos <-> (cc, ss) round trip.
-    const int nSize = sizes.ntor;
-    const int mSize = sizes.mpol;
-    const int mnmax = (nSize + 1) + (mSize - 1) * (2 * nSize + 1);
-    std::vector<double> fcCos(mnmax);
-    for (int i = 0; i < mnmax; ++i) fcCos[i] = 0.1 * (i + 1) + 0.001 * i * i;
-    std::vector<double> fcCC(mSize * (nSize + 1));
-    std::vector<double> fcSS(mSize * (nSize + 1));
-    fb.cosToCcSs(fcCos, fcCC, fcSS, nSize, mSize);
+    const int n_size = sizes.ntor;
+    const int m_size = sizes.mpol;
+    const int mnmax = (n_size + 1) + (m_size - 1) * (2 * n_size + 1);
+    std::vector<double> fc_cos(mnmax);
+    for (int i = 0; i < mnmax; ++i) fc_cos[i] = 0.1 * (i + 1) + 0.001 * i * i;
+    std::vector<double> fc_cc(m_size * (n_size + 1));
+    std::vector<double> fc_ss(m_size * (n_size + 1));
+    fb.cos_to_cc_ss(fc_cos, fc_cc, fc_ss, n_size, m_size);
     std::vector<double> back(mnmax);
-    fb.ccSsToCos(fcCC, fcSS, back, nSize, mSize);
-    check(max_diff(fcCos, back) < 1e-13, "cos <-> (cc, ss) round trip");
+    fb.cc_ss_to_cos(fc_cc, fc_ss, back, n_size, m_size);
+    check(max_diff(fc_cos, back) < 1e-13, "cos <-> (cc, ss) round trip");
 
     // sin <-> (sc, cs) round trip (skip the mn=0 slot, which is unused).
-    std::vector<double> fcSin(mnmax);
-    for (int i = 1; i < mnmax; ++i) fcSin[i] = 0.05 * i + 0.002 * i * i;
-    std::vector<double> fcSC(mSize * (nSize + 1));
-    std::vector<double> fcCS(mSize * (nSize + 1));
-    fb.sinToScCs(fcSin, fcSC, fcCS, nSize, mSize);
+    std::vector<double> fc_sin(mnmax);
+    for (int i = 1; i < mnmax; ++i) fc_sin[i] = 0.05 * i + 0.002 * i * i;
+    std::vector<double> fc_sc(m_size * (n_size + 1));
+    std::vector<double> fc_cs(m_size * (n_size + 1));
+    fb.sin_to_sc_cs(fc_sin, fc_sc, fc_cs, n_size, m_size);
     std::vector<double> back2(mnmax);
-    fb.scCsToSin(fcSC, fcCS, back2, nSize, mSize);
-    check(max_diff(fcSin, back2) < 1e-13, "sin <-> (sc, cs) round trip");
+    fb.sc_cs_to_sin(fc_sc, fc_cs, back2, n_size, m_size);
+    check(max_diff(fc_sin, back2) < 1e-13, "sin <-> (sc, cs) round trip");
 
     return summary();
 }

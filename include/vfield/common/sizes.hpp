@@ -1,7 +1,7 @@
 // sizes.hpp — grid/mode counts and integration weights for the vacuum solver.
 //
 // A port of vmecpp's Sizes restricted to the fields the free-boundary modules
-// consume. `computeDerivedSizes` reproduces vmecpp's count adjustments
+// consume. `compute_derived_sizes` reproduces vmecpp's count adjustments
 // verbatim: ntheta is raised to at least 2*mpol+6 (Nyquist), nzeta to at
 // least 2*ntor+4 in 3D (and forced to 1 for ntor == 0), the surface grid is
 // [0, 2pi[ in poloidal angle on nThetaEven points with the symmetric case
@@ -46,7 +46,7 @@ struct Sizes {
     int nnyq2;
 
    private:
-    void computeDerivedSizes();
+    void compute_derived_sizes();
 };
 
 }  // namespace vfield

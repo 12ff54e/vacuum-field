@@ -26,27 +26,27 @@ class FourierBasisDevice {
     explicit FourierBasisDevice(const FourierBasis& fb,
                                 bool lasym,
                                 int n_theta_even) {
-        uploadTable(fb.mscale, &mscale_);
-        uploadTable(fb.nscale, &nscale_);
-        uploadTable(fb.cosnv, &cosnv_);
-        uploadTable(fb.sinnv, &sinnv_);
-        uploadTable(fb.cosnvn, &cosnvn_);
-        uploadTable(fb.sinnvn, &sinnvn_);
+        upload_table(fb.mscale, &mscale_);
+        upload_table(fb.nscale, &nscale_);
+        upload_table(fb.cosnv, &cosnv_);
+        upload_table(fb.sinnv, &sinnv_);
+        upload_table(fb.cosnvn, &cosnvn_);
+        upload_table(fb.sinnvn, &sinnvn_);
 
         const int n_reduced =
             static_cast<int>(fb.cosmu.size()) / (fb.sizes().mnyq2 + 1);
         const int n_rows = lasym ? n_theta_even : n_reduced;
-        uploadTableExtended(fb.cosmu, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+        upload_table_extended(fb.cosmu, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
                             /*odd=*/false, &cosmu_);
-        uploadTableExtended(fb.sinmu, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+        upload_table_extended(fb.sinmu, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
                             /*odd=*/true, &sinmu_);
-        uploadTableExtended(fb.cosmum, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+        upload_table_extended(fb.cosmum, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
                             /*odd=*/true, &cosmum_);
-        uploadTableExtended(fb.sinmum, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+        upload_table_extended(fb.sinmum, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
                             /*odd=*/false, &sinmum_);
-        uploadTableExtended(fb.cosmui, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+        upload_table_extended(fb.cosmui, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
                             /*odd=*/false, &cosmui_);
-        uploadTableExtended(fb.sinmui, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
+        upload_table_extended(fb.sinmui, n_reduced, n_rows, fb.sizes().mnyq2 + 1,
                             /*odd=*/true, &sinmui_);
     }
 
@@ -64,7 +64,7 @@ class FourierBasisDevice {
     const T* sinnvn() const { return sinnvn_.data(); }
 
    private:
-    static void uploadTable(const std::vector<double>& src,
+    static void upload_table(const std::vector<double>& src,
                             DeviceBuffer<T>* dst) {
         std::vector<T> converted(src.size());
         for (std::size_t i = 0; i < src.size(); ++i) {
@@ -79,7 +79,7 @@ class FourierBasisDevice {
     // parity-signed copies of the reflected reduced rows; the self-reflecting
     // endpoint rows are copied as-is, which the series parity guarantees is
     // correct).
-    static void uploadTableExtended(const std::vector<double>& src,
+    static void upload_table_extended(const std::vector<double>& src,
                                     int n_reduced,
                                     int n_rows,
                                     int num_m,

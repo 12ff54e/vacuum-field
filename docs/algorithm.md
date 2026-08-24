@@ -52,12 +52,12 @@ layout vmecpp passes to LAPACK).
 
 ## Outputs
 
-From the potential coefficients: `potU/potV = dPhi/dtheta, dPhi/dphi` on
+From the potential coefficients: `pot_u/pot_v = dPhi/dtheta, dPhi/dphi` on
 the boundary (basis de-normalized by mscale/nscale), the covariant vacuum
-field `bSubU/bSubV = pot + external covariant`, the surface integrals
-`bSubUVac/bSubVVac = signJ * 2 pi * int bSubU/V wInt dtheta`, and — through
+field `b_sub_u/b_sub_v = pot + external covariant`, the surface integrals
+`b_sub_u_vac/b_sub_v_vac = signJ * 2 pi * int b_sub_u/V wInt dtheta`, and — through
 the full-torus metric (guv*nfp/2, gvv*nfp^2) — the contravariant
-components, `bSqVac = |B|^2/2` (no mu0, the VMEC force convention) and the
+components, `b_sq_vac = |B|^2/2` (no mu0, the VMEC force convention) and the
 cylindrical components `B_R/B_phi/B_Z`.
 
 ## CUDA mapping

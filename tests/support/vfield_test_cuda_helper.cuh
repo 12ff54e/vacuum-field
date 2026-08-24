@@ -18,7 +18,7 @@ namespace vfield::test {
 
 // Stages a host vector on the device (owning buffer).
 template <class T>
-DeviceBuffer<T> toDevice(const std::vector<T>& h) {
+DeviceBuffer<T> to_device(const std::vector<T>& h) {
     DeviceBuffer<T> d(h.size());
     d.upload(h.data(), h.size());
     return d;
@@ -26,7 +26,7 @@ DeviceBuffer<T> toDevice(const std::vector<T>& h) {
 
 // Downloads a device buffer into a host vector.
 template <class T>
-std::vector<T> toHost(const DeviceBuffer<T>& d) {
+std::vector<T> to_host(const DeviceBuffer<T>& d) {
     std::vector<T> h(d.size());
     d.download(h.data(), h.size());
     return h;
@@ -34,10 +34,10 @@ std::vector<T> toHost(const DeviceBuffer<T>& d) {
 
 // Downloads a raw device pointer into a host vector.
 template <class T>
-std::vector<T> toHost(const T* d, std::size_t n) {
+std::vector<T> to_host(const T* d, std::size_t n) {
     std::vector<T> h(n);
     check_cuda(cudaMemcpy(h.data(), d, n * sizeof(T), cudaMemcpyDeviceToHost),
-               "toHost");
+               "to_host");
     return h;
 }
 

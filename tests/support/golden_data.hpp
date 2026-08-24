@@ -18,12 +18,12 @@
 namespace vfield::test {
 
 // Loads and parses a golden JSON file.
-inline json::Value loadGolden(const std::string& path) {
+inline json::Value load_golden(const std::string& path) {
     return json::parse_file(path);
 }
 
 // Flat double array json[i].
-inline std::vector<double> flatArray(const json::Value& v) {
+inline std::vector<double> flat_array(const json::Value& v) {
     std::vector<double> out(v.size());
     for (std::size_t i = 0; i < v.size(); ++i) {
         out[i] = static_cast<double>(v[i]);
@@ -32,11 +32,11 @@ inline std::vector<double> flatArray(const json::Value& v) {
 }
 
 // Two-level double array json[i][j] (the Fortran dumps' [k][l] nesting).
-inline std::vector<std::vector<double>> nestedArray(const json::Value& v) {
+inline std::vector<std::vector<double>> nested_array(const json::Value& v) {
     std::vector<std::vector<double>> out;
     out.reserve(v.size());
     for (std::size_t i = 0; i < v.size(); ++i) {
-        out.push_back(flatArray(v[i]));
+        out.push_back(flat_array(v[i]));
     }
     return out;
 }
@@ -45,7 +45,7 @@ inline std::vector<std::vector<double>> nestedArray(const json::Value& v) {
 // over the given number of poloidal rows, with the row length inferred from
 // the golden's inner size. Returns the number of failing points.
 template <class T>
-std::size_t compareZetaFast(const std::vector<std::vector<double>>& golden,
+std::size_t compare_zeta_fast(const std::vector<std::vector<double>>& golden,
                             const std::vector<T>& actual,
                             std::size_t n_rows,
                             double tol) {

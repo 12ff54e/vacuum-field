@@ -1,6 +1,6 @@
 // singular_coefficients.cpp — cmn/cmns expansion coefficients.
 //
-// Direct port of vmecpp's SingularIntegrals::computeCoefficients (Algorithm 1
+// Direct port of vmecpp's SingularIntegrals::compute_coefficients (Algorithm 1
 // and eq. 6.291 of "the numerics of VMEC++"). The recurrence and the layout
 // must stay verbatim: the golden tests compare against them.
 #include "vfield/common/singular_coefficients.hpp"
@@ -13,10 +13,10 @@ namespace vfield {
 SingularCoefficients::SingularCoefficients(int nf, int mf) : nf_(nf), mf_(mf) {
     cmn.assign((1 + nf + mf) * (nf + 1) * (mf + 1), 0.0);
     cmns.assign((1 + nf + mf) * (nf + 1) * (mf + 1), 0.0);
-    computeCoefficients();
+    compute_coefficients();
 }
 
-void SingularCoefficients::computeCoefficients() {
+void SingularCoefficients::compute_coefficients() {
     // below loop sets only parts of cmn,
     // so initialize all entries to zero once here
     std::fill(cmn.begin(), cmn.end(), 0.0);
@@ -51,18 +51,18 @@ void SingularCoefficients::computeCoefficients() {
             // --> (-1)^{(l-i_mn)/2} == (-1)^{l/2 - i_mn/2} == (-1)^{l/2} /
             // (-1)^{i_mn/2} and since i_mn is constant during the
             // l-iterations, the sign reversed in each iteration
-            int cmnSign = (std::max(0, n - m) % 2 == 0) ? 1 : -1;
+            int cmn_sign = (std::max(0, n - m) % 2 == 0) ? 1 : -1;
 
             for (int l = k_mn; l <= j_mn; l += 2) {
                 int lnm = (l * (nf_ + 1) + n) * (mf_ + 1) + m;
 
-                cmn[lnm] = f1 / (f2 * f3) * cmnSign;
+                cmn[lnm] = f1 / (f2 * f3) * cmn_sign;
 
                 f1 *= (l + 2 + j_mn) * (j_mn - l) * 0.25;
                 f2 *= (l + 2 + k_mn) * 0.5;
                 f3 *= (l + 2 - k_mn) * 0.5;
 
-                cmnSign = -cmnSign;
+                cmn_sign = -cmn_sign;
             }  // l
         }  // m
     }  // n

@@ -2,7 +2,7 @@
 //
 // No Fortran golden exists for the nvper = 64 toroidal-image path, so the
 // operator's axisymmetric kernels are compared against a direct CPU mirror
-// of vmecpp's updateAxisymmetric on a synthetic axisymmetric boundary
+// of vmecpp's update_axisymmetric on a synthetic axisymmetric boundary
 // (double math on the T inputs). Both scalar types are instantiated; the
 // float leg compares at a relaxed tolerance.
 #include "vfield/common/fourier_basis.hpp"
@@ -24,8 +24,8 @@ using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
 using vfield::test::max_rel_diff;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
@@ -36,7 +36,7 @@ constexpr int NTHETA = 24;
 constexpr int NZETA = 1;  // single toroidal plane -> nvper = 64 path
 constexpr int SIGN_J = -1;
 
-void makeCoefficients(std::vector<double>* rcc, std::vector<double>* zsc) {
+void make_coefficients(std::vector<double>* rcc, std::vector<double>* zsc) {
     const int mnsize = MPOL * (NTOR + 1);
     rcc->assign(mnsize, 0.0);
     zsc->assign(mnsize, 0.0);
@@ -48,10 +48,10 @@ void makeCoefficients(std::vector<double>* rcc, std::vector<double>* zsc) {
     }
 }
 
-// CPU mirror of vmecpp's updateAxisymmetric (nZeta == 1): sums over nvper
+// CPU mirror of vmecpp's update_axisymmetric (nZeta == 1): sums over nvper
 // toroidal images with the analytic approximation subtracted at every image,
 // skipping the exact singularity. Computed in double from the T inputs.
-void cpuAxisymReference(const Sizes& s,
+void cpu_axisym_reference(const Sizes& s,
                         const std::vector<double>& r1b,
                         const std::vector<double>& z1b,
                         const std::vector<double>& rcosuv,
@@ -153,12 +153,12 @@ void cpuAxisymReference(const Sizes& s,
 // CPU mirror (which computes in double from the T inputs, the cuMES CPU-mirror
 // pattern).
 template <class T>
-std::vector<double> asDouble(const std::vector<T>& v) {
+std::vector<double> as_double(const std::vector<T>& v) {
     return std::vector<double>(v.begin(), v.end());
 }
 
 template <class T>
-void runPrecision(double tol) {
+void run_precision(double tol) {
     Sizes sizes(false, NFP, MPOL, NTOR, NTHETA, NZETA);
     FourierBasis fb(sizes);
     FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
@@ -166,59 +166,59 @@ void runPrecision(double tol) {
     RegularizedIntegralsOperator<T> ri(sizes, sg);
 
     std::vector<double> rcc, zsc;
-    makeCoefficients(&rcc, &zsc);
+    make_coefficients(&rcc, &zsc);
     std::vector<double> rss(sizes.mnsize, 0.0);
     std::vector<double> zcs(sizes.mnsize, 0.0);
 
     std::vector<T> rcc_t(rcc.begin(), rcc.end());
     std::vector<T> zsc_t(zsc.begin(), zsc.end());
     std::vector<T> zero_t(sizes.mnsize, T(0));
-    auto d_rcc = toDevice(rcc_t);
-    auto d_zsc = toDevice(zsc_t);
-    auto d_zero = toDevice(zero_t);
+    auto d_rcc = to_device(rcc_t);
+    auto d_zsc = to_device(zsc_t);
+    auto d_zero = to_device(zero_t);
 
     sg.update(d_rcc.data(), d_zero.data(), nullptr, nullptr, d_zsc.data(),
               d_zero.data(), nullptr, nullptr, SIGN_J, true);
 
-    // Fabricate a smooth bDotN (any input works: the operator is linear in
+    // Fabricate a smooth b_dot_n (any input works: the operator is linear in
     // it).
     std::vector<T> bdotn(sizes.nZnT);
     for (int kl = 0; kl < sizes.nZnT; ++kl) {
         bdotn[kl] = static_cast<T>(0.5 + 0.1 * std::sin(kl * 0.7));
     }
-    auto d_bdotn = toDevice(bdotn);
+    auto d_bdotn = to_device(bdotn);
     ri.update(d_bdotn.data());
 
     // Download the geometry for the CPU mirror (double math).
-    const auto r1b = toHost(sg.r1b(), sizes.nThetaEven * sizes.nZeta);
-    const auto z1b = toHost(sg.z1b(), sizes.nThetaEven * sizes.nZeta);
-    const auto rcosuv = toHost(sg.rcosuv(), sizes.nThetaEven * sizes.nZeta);
-    const auto rsinuv = toHost(sg.rsinuv(), sizes.nThetaEven * sizes.nZeta);
-    const auto rzb2 = toHost(sg.rzb2(), sizes.nThetaEven * sizes.nZeta);
-    const auto drv = toHost(sg.drv(), sizes.nZnT);
-    const auto snr = toHost(sg.snr(), sizes.nZnT);
-    const auto snv = toHost(sg.snv(), sizes.nZnT);
-    const auto snz = toHost(sg.snz(), sizes.nZnT);
-    const auto guu = toHost(sg.guu(), sizes.nZnT);
-    const auto guv = toHost(sg.guv(), sizes.nZnT);
-    const auto gvv = toHost(sg.gvv(), sizes.nZnT);
-    const auto auu = toHost(sg.auu(), sizes.nZnT);
-    const auto auv = toHost(sg.auv(), sizes.nZnT);
-    const auto avv = toHost(sg.avv(), sizes.nZnT);
+    const auto r1b = to_host(sg.r1b(), sizes.nThetaEven * sizes.nZeta);
+    const auto z1b = to_host(sg.z1b(), sizes.nThetaEven * sizes.nZeta);
+    const auto rcosuv = to_host(sg.rcosuv(), sizes.nThetaEven * sizes.nZeta);
+    const auto rsinuv = to_host(sg.rsinuv(), sizes.nThetaEven * sizes.nZeta);
+    const auto rzb2 = to_host(sg.rzb2(), sizes.nThetaEven * sizes.nZeta);
+    const auto drv = to_host(sg.drv(), sizes.nZnT);
+    const auto snr = to_host(sg.snr(), sizes.nZnT);
+    const auto snv = to_host(sg.snv(), sizes.nZnT);
+    const auto snz = to_host(sg.snz(), sizes.nZnT);
+    const auto guu = to_host(sg.guu(), sizes.nZnT);
+    const auto guv = to_host(sg.guv(), sizes.nZnT);
+    const auto gvv = to_host(sg.gvv(), sizes.nZnT);
+    const auto auu = to_host(sg.auu(), sizes.nZnT);
+    const auto auv = to_host(sg.auv(), sizes.nZnT);
+    const auto avv = to_host(sg.avv(), sizes.nZnT);
     std::vector<double> bdotn_d(bdotn.begin(), bdotn.end());
 
     std::vector<double> greenp_ref, gstore_ref;
-    cpuAxisymReference(sizes, asDouble(r1b), asDouble(z1b), asDouble(rcosuv),
-                       asDouble(rsinuv), asDouble(rzb2), asDouble(drv),
-                       asDouble(snr), asDouble(snv), asDouble(snz),
-                       asDouble(guu), asDouble(guv), asDouble(gvv),
-                       asDouble(auu), asDouble(auv), asDouble(avv), bdotn_d,
+    cpu_axisym_reference(sizes, as_double(r1b), as_double(z1b), as_double(rcosuv),
+                       as_double(rsinuv), as_double(rzb2), as_double(drv),
+                       as_double(snr), as_double(snv), as_double(snz),
+                       as_double(guu), as_double(guv), as_double(gvv),
+                       as_double(auu), as_double(auv), as_double(avv), bdotn_d,
                        &greenp_ref, &gstore_ref);
 
-    check(max_rel_diff(toHost(ri.greenp(), sizes.nZnT * sizes.nThetaEven),
+    check(max_rel_diff(to_host(ri.greenp(), sizes.nZnT * sizes.nThetaEven),
                        greenp_ref) < tol,
           "greenp (axisym)");
-    check(max_rel_diff(toHost(ri.gstore(), sizes.nThetaEven), gstore_ref) < tol,
+    check(max_rel_diff(to_host(ri.gstore(), sizes.nThetaEven), gstore_ref) < tol,
           "gstore (axisym)");
 }
 
@@ -230,7 +230,7 @@ int main() {
     // (htemp*ftemp*(...) - ga1*ga2) terms cancel, so the observed kernel-vs-
     // mirror gap is ~1e-12 — FMA noise, not a defect (measured 1.35e-12 at
     // tol 1e-12).
-    runPrecision<double>(1e-11);
-    runPrecision<float>(1e-4);
+    run_precision<double>(1e-11);
+    run_precision<float>(1e-4);
     return summary();
 }

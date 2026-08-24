@@ -1,6 +1,6 @@
 // test_singular_integrals.cu — T_l^+/- recurrences vs Gauss-Legendre.
 //
-// Port of vmecpp's TlpTlmAccuracyTest: the operator's prepareUpdate runs on
+// Port of vmecpp's TlpTlmAccuracyTest: the operator's prepare_update runs on
 // synthetic CONSTANT geometry (a=0.8, b2=-1.3, c=1.2, so am/ap ~ 4.7) and the
 // resulting T tables are compared per point against 64-point Gauss-Legendre
 // quadrature of the defining integral. Two (mpol, ntor) resolutions cover
@@ -25,8 +25,8 @@ using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
 using vfield::test::is_close_rel_abs;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
@@ -104,7 +104,7 @@ constexpr std::array<std::array<double, 2>, GL_NODES> GAUSS_LEGENDRE_64 = {{
 //   T^-_l = integral_{-1}^{+1} t^l / sqrt(ap + 2*d*t + am*t^2) dt
 // (the integrands are smooth on [-1,+1] as long as the discriminant
 // d^2 - ap*am < 0, i.e. b2 != 0).
-double tlpReference(int l, double ap, double am, double d) {
+double tlp_reference(int l, double ap, double am, double d) {
     double sum = 0.0;
     for (const auto& [w, t] : GAUSS_LEGENDRE_64) {
         const double tl = std::pow(t, l);
@@ -114,7 +114,7 @@ double tlpReference(int l, double ap, double am, double d) {
     return sum;
 }
 
-double tlmReference(int l, double ap, double am, double d) {
+double tlm_reference(int l, double ap, double am, double d) {
     // T^-_l swaps ap <-> am in the radicand.
     double sum = 0.0;
     for (const auto& [w, t] : GAUSS_LEGENDRE_64) {
@@ -126,7 +126,7 @@ double tlmReference(int l, double ap, double am, double d) {
 }
 
 template <class T>
-void runResolution(int mpol,
+void run_resolution(int mpol,
                    int ntor,
                    double a_val,
                    double b2_val,
@@ -164,22 +164,22 @@ void runResolution(int mpol,
     std::vector<T> c(sizes.nZnT, static_cast<T>(c_val));
     std::vector<T> zero(sizes.nZnT, static_cast<T>(0));
 
-    auto d_a = toDevice(a);
-    auto d_b2 = toDevice(b2);
-    auto d_c = toDevice(c);
-    auto d_zero = toDevice(zero);
+    auto d_a = to_device(a);
+    auto d_b2 = to_device(b2);
+    auto d_c = to_device(c);
+    auto d_zero = to_device(zero);
 
     // full_update=false: the second-fundamental-form inputs are unused.
-    si.prepareUpdate(d_a.data(), d_b2.data(), d_c.data(), d_zero.data(),
+    si.prepare_update(d_a.data(), d_b2.data(), d_c.data(), d_zero.data(),
                      d_zero.data(), d_zero.data(), false);
 
-    const auto tlp = toHost(si.tlp(), (L + 2) * sizes.nZnT);
-    const auto tlm = toHost(si.tlm(), (L + 2) * sizes.nZnT);
+    const auto tlp = to_host(si.tlp(), (L + 2) * sizes.nZnT);
+    const auto tlm = to_host(si.tlm(), (L + 2) * sizes.nZnT);
 
     bool ok = true;
     for (int l = 0; l <= L; ++l) {
-        const double Tp_ref = tlpReference(l, ap, am, d);
-        const double Tm_ref = tlmReference(l, ap, am, d);
+        const double Tp_ref = tlp_reference(l, ap, am, d);
+        const double Tm_ref = tlm_reference(l, ap, am, d);
         for (int kl = 0; kl < sizes.nZnT; ++kl) {
             if (!is_close_rel_abs(Tp_ref,
                                   static_cast<double>(tlp[l * sizes.nZnT + kl]),
@@ -204,13 +204,13 @@ void runResolution(int mpol,
 
 int main() {
     // L=9: forward recurrence is accurate (forward branch).
-    runResolution<double>(4, 4, 0.8, -1.3, 1.2, 1e-11);
+    run_resolution<double>(4, 4, 0.8, -1.3, 1.2, 1e-11);
     // L=17: the Miller backward branch fires (forward would lose > 10
     // digits).
-    runResolution<double>(8, 8, 0.8, -1.3, 1.2, 1e-11);
+    run_resolution<double>(8, 8, 0.8, -1.3, 1.2, 1e-11);
     // Float: near-degenerate coefficients (the vmecpp geometry loses ~6 of
     // float's 7 digits already at L=9) and a relaxed tolerance.
-    runResolution<float>(4, 4, 0.8, 0.1, 1.2, 1e-5);
-    runResolution<float>(8, 8, 0.8, 0.1, 1.2, 1e-5);
+    run_resolution<float>(4, 4, 0.8, 0.1, 1.2, 1e-5);
+    run_resolution<float>(8, 8, 0.8, 0.1, 1.2, 1e-5);
     return summary();
 }

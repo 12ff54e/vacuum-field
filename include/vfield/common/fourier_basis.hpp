@@ -33,40 +33,40 @@ class FourierBasis {
 
     // Index helpers mirroring the zeta-fast layout (static so both host code
     // and device code can lay out index arithmetic identically).
-    static int poloidalBasisIndex(int m, int l, int num_m) {
+    static int poloidal_basis_index(int m, int l, int num_m) {
         return l * num_m + m;
     }
-    static int toroidalBasisIndex(int n, int k, int num_k) {
+    static int toroidal_basis_index(int n, int k, int num_k) {
         return n * num_k + k;
     }
     // (m, n) -> n * m_size + m in the n-major coefficient layout.
-    static int productIndex(int m, int n, int m_size) { return n * m_size + m; }
+    static int product_index(int m, int n, int m_size) { return n * m_size + m; }
 
     // Convert cos(xm[mn] theta - xn[mn] zeta) spectral arrays into the 2D
     // (n-major) product-basis arrays of the NESTOR coefficient layout.
     // Returns the number of converted modes (mnmax).
-    int cosToCcSs(std::span<const double> fcCos,
-                  std::span<double> fcCC,
-                  std::span<double> fcSS,
-                  int nSize,
-                  int mSize) const;
-    int sinToScCs(std::span<const double> fcSin,
-                  std::span<double> fcSC,
-                  std::span<double> fcCS,
-                  int nSize,
-                  int mSize) const;
+    int cos_to_cc_ss(std::span<const double> fc_cos,
+                  std::span<double> fc_cc,
+                  std::span<double> fc_ss,
+                  int n_size,
+                  int m_size) const;
+    int sin_to_sc_cs(std::span<const double> fc_sin,
+                  std::span<double> fc_sc,
+                  std::span<double> fc_cs,
+                  int n_size,
+                  int m_size) const;
 
     // Round-trips (used by the unit tests and the golden-input decode check).
-    int ccSsToCos(std::span<const double> fcCC,
-                  std::span<const double> fcSS,
-                  std::span<double> fcCos,
-                  int nSize,
-                  int mSize) const;
-    int scCsToSin(std::span<const double> fcSC,
-                  std::span<const double> fcCS,
-                  std::span<double> fcSin,
-                  int nSize,
-                  int mSize) const;
+    int cc_ss_to_cos(std::span<const double> fc_cc,
+                  std::span<const double> fc_ss,
+                  std::span<double> fc_cos,
+                  int n_size,
+                  int m_size) const;
+    int sc_cs_to_sin(std::span<const double> fc_sc,
+                  std::span<const double> fc_cs,
+                  std::span<double> fc_sin,
+                  int n_size,
+                  int m_size) const;
 
     std::vector<double> mscale;  // [mnyq2 + 1]
     std::vector<double> nscale;  // [nnyq2 + 1]
@@ -88,7 +88,7 @@ class FourierBasis {
     const Sizes& sizes() const { return sizes_; }
 
    private:
-    void computeFourierBasis(int nfp);
+    void compute_fourier_basis(int nfp);
 
     Sizes sizes_;
 };

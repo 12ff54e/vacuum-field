@@ -4,7 +4,7 @@
 // Fourier synthesis of the LCFS coefficients onto the surface grid plus the
 // derived normal / metric / second-fundamental-form quantities, with the
 // same normalization conventions (guv = 2*g_theta_phi/nfp, gvv =
-// g_phi_phi/nfp^2, sn = signOfJacobian * (-r*N)). Serial over the whole
+// g_phi_phi/nfp^2, sn = sign_of_jacobian * (-r*N)). Serial over the whole
 // grid: the OpenMP tangential partitioning is dropped, so every array is
 // indexed by the flat zeta-fast index kl = l*nZeta + k over the effective
 // poloidal range [0, nThetaEff).
@@ -59,10 +59,10 @@ class SurfaceGeometryOperator {
     const T* zvv() const { return zvv_.data(); }
 
     // [nfp] / [nZeta] — field-period and grid toroidal-angle trig tables.
-    const T* cosPer() const { return cos_per_.data(); }
-    const T* sinPer() const { return sin_per_.data(); }
-    const T* cosPhi() const { return cos_phi_.data(); }
-    const T* sinPhi() const { return sin_phi_.data(); }
+    const T* cos_per() const { return cos_per_.data(); }
+    const T* sin_per() const { return sin_per_.data(); }
+    const T* cos_phi() const { return cos_phi_.data(); }
+    const T* sin_phi() const { return sin_phi_.data(); }
 
     const T* snr() const { return snr_.data(); }
     const T* snv() const { return snv_.data(); }

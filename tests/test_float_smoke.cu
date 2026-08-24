@@ -20,12 +20,12 @@ using vfield::FourierBasis;
 using vfield::Sizes;
 using vfield::VacuumFieldSolver;
 using vfield::test::check;
-using vfield::test::flatArray;
-using vfield::test::loadGolden;
+using vfield::test::flat_array;
+using vfield::test::load_golden;
 using vfield::test::max_rel_diff;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
@@ -33,7 +33,7 @@ const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 // Runs one iteration (full update) at precision T and returns the outputs.
 template <class T>
-void runCase(int iter,
+void run_case(int iter,
              const Sizes& sizes,
              const FourierBasis&,
              const std::vector<double>& rcc,
@@ -61,12 +61,12 @@ void runCase(int iter,
     std::vector<T> zcs_t(zcs.begin(), zcs.end());
     std::vector<T> raxis_t(raxis.begin(), raxis.end());
     std::vector<T> zaxis_t(zaxis.begin(), zaxis.end());
-    auto d_rcc = toDevice(rcc_t);
-    auto d_rss = toDevice(rss_t);
-    auto d_zsc = toDevice(zsc_t);
-    auto d_zcs = toDevice(zcs_t);
-    auto d_raxis = toDevice(raxis_t);
-    auto d_zaxis = toDevice(zaxis_t);
+    auto d_rcc = to_device(rcc_t);
+    auto d_rss = to_device(rss_t);
+    auto d_zsc = to_device(zsc_t);
+    auto d_zcs = to_device(zcs_t);
+    auto d_raxis = to_device(raxis_t);
+    auto d_zaxis = to_device(zaxis_t);
 
     T bsubu_vac = 0, bsubv_vac = 0;
     solver.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
@@ -74,20 +74,20 @@ void runCase(int iter,
                   d_zaxis.data(), &bsubu_vac, &bsubv_vac,
                   static_cast<T>(net_toroidal_current), true);
 
-    *potu = toHost(solver.potU(), sizes.nZnT);
-    *potv = toHost(solver.potV(), sizes.nZnT);
-    *bsubu = toHost(solver.bSubU(), sizes.nZnT);
-    *bsubv = toHost(solver.bSubV(), sizes.nZnT);
-    *bsqvac = toHost(solver.bSqVac(), sizes.nZnT);
+    *potu = to_host(solver.pot_u(), sizes.nZnT);
+    *potv = to_host(solver.pot_v(), sizes.nZnT);
+    *bsubu = to_host(solver.b_sub_u(), sizes.nZnT);
+    *bsubv = to_host(solver.b_sub_v(), sizes.nZnT);
+    *bsqvac = to_host(solver.b_sq_vac(), sizes.nZnT);
     const int mnpd = (2 * sizes.ntor + 1) * (sizes.mpol + 2);
-    *pot = toHost(solver.potential(), mnpd);
+    *pot = to_host(solver.potential(), mnpd);
     (void)iter;
 }
 
 }  // namespace
 
 int main() {
-    const json::Value vacuum = loadGolden(
+    const json::Value vacuum = load_golden(
         DATA_DIR +
         "vac1n_vacuum/vac1n_vacuum_00015_000053_01.cth_like_free_bdy.json");
     const int sign_j =
@@ -96,23 +96,23 @@ int main() {
     Sizes sizes(false, 5, 5, 4, 16, 36);
     FourierBasis fb(sizes);
     std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
-    fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+    fb.cos_to_cc_ss(flat_array(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
                  sizes.mpol);
     std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
-    fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+    fb.sin_to_sc_cs(flat_array(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                  sizes.mpol);
-    const std::vector<double> raxis = flatArray(vacuum.at("raxis_nestor"));
-    const std::vector<double> zaxis = flatArray(vacuum.at("zaxis_nestor"));
+    const std::vector<double> raxis = flat_array(vacuum.at("raxis_nestor"));
+    const std::vector<double> zaxis = flat_array(vacuum.at("zaxis_nestor"));
     const double net_toroidal_current =
         static_cast<double>(vacuum.at("plascur")) /
         (4.0 * std::numbers::pi * 1.0e-7);
 
     std::vector<double> potu_d, potv_d, bsubu_d, bsubv_d, bsqvac_d, pot_d;
-    runCase<double>(53, sizes, fb, rcc, rss, zsc, zcs, raxis, zaxis,
+    run_case<double>(53, sizes, fb, rcc, rss, zsc, zcs, raxis, zaxis,
                     net_toroidal_current, sign_j, &potu_d, &potv_d, &bsubu_d,
                     &bsubv_d, &bsqvac_d, &pot_d);
     std::vector<float> potu_f, potv_f, bsubu_f, bsubv_f, bsqvac_f, pot_f;
-    runCase<float>(53, sizes, fb, rcc, rss, zsc, zcs, raxis, zaxis,
+    run_case<float>(53, sizes, fb, rcc, rss, zsc, zcs, raxis, zaxis,
                    net_toroidal_current, sign_j, &potu_f, &potv_f, &bsubu_f,
                    &bsubv_f, &bsqvac_f, &pot_f);
 

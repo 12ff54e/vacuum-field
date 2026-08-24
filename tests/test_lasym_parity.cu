@@ -24,8 +24,8 @@ using vfield::VacuumFieldSolver;
 using vfield::test::check;
 using vfield::test::max_rel_diff;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
@@ -38,7 +38,7 @@ constexpr int SIGN_J = -1;
 // The axis-current drive (A); any nonzero value works.
 constexpr double AXIS_CURRENT = 1.0e6;
 
-void makeCoefficients(std::vector<double>* rcc,
+void make_coefficients(std::vector<double>* rcc,
                       std::vector<double>* rss,
                       std::vector<double>* zsc,
                       std::vector<double>* zcs) {
@@ -66,7 +66,7 @@ struct Outputs {
 
 // Runs the pipeline with the axis-current external field and returns the
 // outputs over the REDUCED poloidal range.
-Outputs runPipeline(const Sizes& sizes,
+Outputs run_pipeline(const Sizes& sizes,
                     const std::vector<double>& rcc,
                     const std::vector<double>& rss,
                     const std::vector<double>& zsc,
@@ -85,13 +85,13 @@ Outputs runPipeline(const Sizes& sizes,
     VacuumFieldSolver<double> solver(params);
 
     std::vector<double> zero(sizes.mnsize, 0.0);
-    auto d_rcc = toDevice(rcc);
-    auto d_rss = toDevice(rss);
-    auto d_zsc = toDevice(zsc);
-    auto d_zcs = toDevice(zcs);
-    auto d_zero = toDevice(zero);
-    auto d_raxis = toDevice(raxis);
-    auto d_zaxis = toDevice(zaxis);
+    auto d_rcc = to_device(rcc);
+    auto d_rss = to_device(rss);
+    auto d_zsc = to_device(zsc);
+    auto d_zcs = to_device(zcs);
+    auto d_zero = to_device(zero);
+    auto d_raxis = to_device(raxis);
+    auto d_zaxis = to_device(zaxis);
 
     double bsubu_vac = 0, bsubv_vac = 0;
     if (sizes.lasym) {
@@ -107,13 +107,13 @@ Outputs runPipeline(const Sizes& sizes,
     }
 
     Outputs out;
-    out.potu = toHost(solver.potU(), sizes.nZnT);
-    out.potv = toHost(solver.potV(), sizes.nZnT);
-    out.bsubu = toHost(solver.bSubU(), sizes.nZnT);
-    out.bsubv = toHost(solver.bSubV(), sizes.nZnT);
-    out.bsqvac = toHost(solver.bSqVac(), sizes.nZnT);
+    out.potu = to_host(solver.pot_u(), sizes.nZnT);
+    out.potv = to_host(solver.pot_v(), sizes.nZnT);
+    out.bsubu = to_host(solver.b_sub_u(), sizes.nZnT);
+    out.bsubv = to_host(solver.b_sub_v(), sizes.nZnT);
+    out.bsqvac = to_host(solver.b_sq_vac(), sizes.nZnT);
     const int mnpd = (2 * sizes.ntor + 1) * (sizes.mpol + 2);
-    out.pot = toHost(solver.potential(), mnpd);
+    out.pot = to_host(solver.potential(), mnpd);
     // keep only the reduced range (the lasym outputs span the full grid)
     out.potu.resize(sizes.nZeta * sizes.nThetaReduced);
     out.potv.resize(sizes.nZeta * sizes.nThetaReduced);
@@ -127,7 +127,7 @@ Outputs runPipeline(const Sizes& sizes,
 
 int main() {
     std::vector<double> rcc, rss, zsc, zcs;
-    makeCoefficients(&rcc, &rss, &zsc, &zcs);
+    make_coefficients(&rcc, &rss, &zsc, &zcs);
     std::vector<double> raxis(NZETA), zaxis(NZETA);
     for (int k = 0; k < NZETA; ++k) {
         raxis[k] = 0.6 + 0.02 * std::cos(2.0 * std::numbers::pi * k / NZETA);
@@ -136,11 +136,11 @@ int main() {
 
     Sizes sizes_sym(false, NFP, MPOL, NTOR, NTHETA, NZETA);
     const Outputs sym =
-        runPipeline(sizes_sym, rcc, rss, zsc, zcs, raxis, zaxis);
+        run_pipeline(sizes_sym, rcc, rss, zsc, zcs, raxis, zaxis);
 
     Sizes sizes_asym(true, NFP, MPOL, NTOR, NTHETA, NZETA);
     const Outputs asym =
-        runPipeline(sizes_asym, rcc, rss, zsc, zcs, raxis, zaxis);
+        run_pipeline(sizes_asym, rcc, rss, zsc, zcs, raxis, zaxis);
 
     const double tol = 1e-12;
     check(max_rel_diff(asym.potu, sym.potu) < tol, "potu parity");

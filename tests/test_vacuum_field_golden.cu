@@ -21,20 +21,20 @@ using vfield::FourierBasis;
 using vfield::Sizes;
 using vfield::VacuumFieldSolver;
 using vfield::test::check;
-using vfield::test::compareZetaFast;
-using vfield::test::flatArray;
+using vfield::test::compare_zeta_fast;
+using vfield::test::flat_array;
 using vfield::test::is_close_rel_abs;
-using vfield::test::loadGolden;
-using vfield::test::nestedArray;
+using vfield::test::load_golden;
+using vfield::test::nested_array;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
 const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
-std::string jsonPath(const std::string& checkpoint, int iter) {
+std::string json_path(const std::string& checkpoint, int iter) {
     std::ostringstream oss;
     oss << DATA_DIR << checkpoint << "/" << checkpoint << "_00015_"
         << std::setw(6) << std::setfill('0') << iter
@@ -42,11 +42,11 @@ std::string jsonPath(const std::string& checkpoint, int iter) {
     return oss.str();
 }
 
-void runIteration(int iter,
+void run_iteration(int iter,
                   VacuumFieldSolver<double>& solver,
                   const Sizes& sizes) {
-    const json::Value vacuum = loadGolden(jsonPath("vac1n_vacuum", iter));
-    const json::Value bsqvac = loadGolden(jsonPath("vac1n_bsqvac", iter));
+    const json::Value vacuum = load_golden(json_path("vac1n_vacuum", iter));
+    const json::Value bsqvac = load_golden(json_path("vac1n_bsqvac", iter));
 
     const bool full_update =
         (static_cast<double>(vacuum.at("ivac_skip")) == 0.0);
@@ -55,18 +55,18 @@ void runIteration(int iter,
 
     FourierBasis fb(sizes);
     std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
-    fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+    fb.cos_to_cc_ss(flat_array(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
                  sizes.mpol);
     std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
-    fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+    fb.sin_to_sc_cs(flat_array(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                  sizes.mpol);
 
-    auto d_rcc = toDevice(rcc);
-    auto d_rss = toDevice(rss);
-    auto d_zsc = toDevice(zsc);
-    auto d_zcs = toDevice(zcs);
-    auto d_raxis = toDevice(flatArray(vacuum.at("raxis_nestor")));
-    auto d_zaxis = toDevice(flatArray(vacuum.at("zaxis_nestor")));
+    auto d_rcc = to_device(rcc);
+    auto d_rss = to_device(rss);
+    auto d_zsc = to_device(zsc);
+    auto d_zcs = to_device(zcs);
+    auto d_raxis = to_device(flat_array(vacuum.at("raxis_nestor")));
+    auto d_zaxis = to_device(flat_array(vacuum.at("zaxis_nestor")));
 
     const double net_toroidal_current =
         static_cast<double>(vacuum.at("plascur")) /
@@ -85,7 +85,7 @@ void runIteration(int iter,
 
     // Potential coefficients (potsin, flat [mnpd]).
     const int mnpd = (2 * sizes.ntor + 1) * (sizes.mpol + 2);
-    const auto pot = toHost(solver.potential(), mnpd);
+    const auto pot = to_host(solver.potential(), mnpd);
     bool pot_ok = true;
     for (int mn = 0; mn < mnpd; ++mn) {
         if (!is_close_rel_abs(static_cast<double>(bsqvac.at("potsin")[mn]),
@@ -95,36 +95,36 @@ void runIteration(int iter,
     }
     check(pot_ok, ("potsin " + iter_name));
 
-    check(compareZetaFast(nestedArray(bsqvac.at("potu")),
-                          toHost(solver.potU(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bsqvac.at("potu")),
+                          to_host(solver.pot_u(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("potu " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("potv")),
-                          toHost(solver.potV(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bsqvac.at("potv")),
+                          to_host(solver.pot_v(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("potv " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("bsubu")),
-                          toHost(solver.bSubU(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bsqvac.at("bsubu")),
+                          to_host(solver.b_sub_u(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("bsubu " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("bsubv")),
-                          toHost(solver.bSubV(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bsqvac.at("bsubv")),
+                          to_host(solver.b_sub_v(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("bsubv " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("bsqvac")),
-                          toHost(solver.bSqVac(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bsqvac.at("bsqvac")),
+                          to_host(solver.b_sq_vac(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("bsqvac " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("brv")),
-                          toHost(solver.vacuumBR(), sizes.nZnT),
+    check(compare_zeta_fast(nested_array(bsqvac.at("brv")),
+                          to_host(solver.vacuum_b_r(), sizes.nZnT),
                           sizes.nThetaEff, tol) == 0,
           ("brv " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("bphiv")),
-                          toHost(solver.vacuumBPhi(), sizes.nZnT),
+    check(compare_zeta_fast(nested_array(bsqvac.at("bphiv")),
+                          to_host(solver.vacuum_b_phi(), sizes.nZnT),
                           sizes.nThetaEff, tol) == 0,
           ("bphiv " + iter_name));
-    check(compareZetaFast(nestedArray(bsqvac.at("bzv")),
-                          toHost(solver.vacuumBZ(), sizes.nZnT),
+    check(compare_zeta_fast(nested_array(bsqvac.at("bzv")),
+                          to_host(solver.vacuum_b_z(), sizes.nZnT),
                           sizes.nThetaEff, tol) == 0,
           ("bzv " + iter_name));
 }
@@ -138,7 +138,7 @@ int main() {
     params.mgrid_file = DATA_DIR + "../mgrid_cth_like.nc";
     VacuumFieldSolver<double> solver(params);
 
-    runIteration(53, solver, sizes);
-    runIteration(54, solver, sizes);
+    run_iteration(53, solver, sizes);
+    run_iteration(54, solver, sizes);
     return summary();
 }

@@ -21,25 +21,25 @@ namespace {
 
 constexpr int BLOCK_SIZE = 256;
 
-inline int gridSize(int n) {
+inline int grid_size(int n) {
     return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 template <class KernelParams>
-void launchChecked(const void* func,
+void launch_checked(const void* func,
                    int n,
                    int block,
                    const KernelParams& params,
                    cudaStream_t stream,
                    const char* tag) {
     void* kargs[] = {const_cast<KernelParams*>(&params)};
-    check_cuda(cudaLaunchKernel(func, dim3(gridSize(n)), dim3(block), kargs, 0,
+    check_cuda(cudaLaunchKernel(func, dim3(grid_size(n)), dim3(block), kargs, 0,
                                 stream),
                tag);
 }
 
 template <class T>
-void uploadConverted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
+void upload_converted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
     std::vector<T> converted(src.size());
     for (std::size_t i = 0; i < src.size(); ++i) {
         converted[i] = static_cast<T>(src[i]);
@@ -69,13 +69,13 @@ struct RegularizedKernelParams {
     const T* auv;
     const T* avv;
     // Field-period rotation tables (from the surface geometry).
-    const T* cosPer;
-    const T* sinPer;
+    const T* cos_per;
+    const T* sin_per;
     // Tangential angle tables + weights.
     const T* tanu;
     const T* tanv;
-    const T* tanvPer;
-    const T* bDotN;
+    const T* tanv_per;
+    const T* b_dot_n;
     const T* wInt;
     // Sizes.
     int nZeta;
@@ -92,7 +92,7 @@ struct RegularizedKernelParams {
 // 3D case: regularized normal-derivative kernel. One thread per (source,
 // target) pair, accumulating over the field periods in ascending order.
 template <class T>
-__global__ void regularizedGreenpKernel(RegularizedKernelParams<T> p) {
+__global__ void regularized_greenp_kernel(RegularizedKernelParams<T> p) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     const int full = p.nThetaEven * p.nZeta;
     const int klp = idx / full;
@@ -148,8 +148,8 @@ __global__ void regularizedGreenpKernel(RegularizedKernelParams<T> p) {
     // all following field periods: rotated evaluation point, no analytic
     // subtraction.
     for (int per = 1; per < p.nfp; ++per) {
-        const T cos_per = p.cosPer[per];
-        const T sin_per = p.sinPer[per];
+        const T cos_per = p.cos_per[per];
+        const T sin_per = p.sin_per[per];
         const T xper = xp * cos_per - yp * sin_per;
         const T yper = xp * sin_per + yp * cos_per;
         const T sxsave = (p.snr[klp] * xper - p.snv[klp] * yper) / p.r1b[klp];
@@ -169,7 +169,7 @@ __global__ void regularizedGreenpKernel(RegularizedKernelParams<T> p) {
 // 3D case: regularized source term. One thread per target point,
 // accumulating over the source points in ascending order.
 template <class T>
-__global__ void regularizedGstoreKernel(RegularizedKernelParams<T> p) {
+__global__ void regularized_gstore_kernel(RegularizedKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     const int full = p.nThetaEven * p.nZeta;
     if (kl >= full) return;
@@ -181,7 +181,7 @@ __global__ void regularizedGstoreKernel(RegularizedKernelParams<T> p) {
     for (int klp = 0; klp < p.nZnT; ++klp) {
         const int lp = klp / p.nZeta;
         const int kp = klp % p.nZeta;
-        const T bexni = p.bDotN[klp] * p.wInt[lp];
+        const T bexni = p.b_dot_n[klp] * p.wInt[lp];
 
         const T xp = p.rcosuv[klp];
         const T yp = p.rsinuv[klp];
@@ -207,8 +207,8 @@ __global__ void regularizedGstoreKernel(RegularizedKernelParams<T> p) {
 
         // all following field periods.
         for (int per = 1; per < p.nfp; ++per) {
-            const T cos_per = p.cosPer[per];
-            const T sin_per = p.sinPer[per];
+            const T cos_per = p.cos_per[per];
+            const T sin_per = p.sin_per[per];
             const T xper = xp * cos_per - yp * sin_per;
             const T yper = xp * sin_per + yp * cos_per;
 
@@ -227,7 +227,7 @@ __global__ void regularizedGstoreKernel(RegularizedKernelParams<T> p) {
 // toroidal images of the evaluation point; the analytic approximation is
 // subtracted at every image.
 template <class T>
-__global__ void regularizedGreenpAxisymKernel(RegularizedKernelParams<T> p) {
+__global__ void regularized_greenp_axisym_kernel(RegularizedKernelParams<T> p) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     const int klp = idx / p.nThetaEven;
     const int kl = idx - klp * p.nThetaEven;
@@ -258,7 +258,7 @@ __global__ void regularizedGreenpAxisymKernel(RegularizedKernelParams<T> p) {
         const T sxsave = (p.snr[klp] * xper - p.snv[klp] * yper) / p.r1b[klp];
         const T sysave = (p.snr[klp] * yper + p.snv[klp] * xper) / p.r1b[klp];
 
-        const T tanv_p = p.tanvPer[per];
+        const T tanv_p = p.tanv_per[per];
 
         T ga1 = p.guu[klp] * p.tanu[delta_l] * p.tanu[delta_l] +
                 p.guv[klp] * p.tanu[delta_l] * tanv_p +
@@ -284,7 +284,7 @@ __global__ void regularizedGreenpAxisymKernel(RegularizedKernelParams<T> p) {
 
 // Axisymmetric case: regularized source term.
 template <class T>
-__global__ void regularizedGstoreAxisymKernel(RegularizedKernelParams<T> p) {
+__global__ void regularized_gstore_axisym_kernel(RegularizedKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nThetaEven) return;
 
@@ -292,7 +292,7 @@ __global__ void regularizedGstoreAxisymKernel(RegularizedKernelParams<T> p) {
 
     T accum = 0;
     for (int klp = 0; klp < p.nZnT; ++klp) {
-        const T bexni = p.bDotN[klp] * p.wInt[klp];
+        const T bexni = p.b_dot_n[klp] * p.wInt[klp];
 
         const T xp = p.rcosuv[klp];
         const T yp = p.rsinuv[klp];
@@ -310,7 +310,7 @@ __global__ void regularizedGstoreAxisymKernel(RegularizedKernelParams<T> p) {
             const T xper = xp * cosper - yp * sinper;
             const T yper = xp * sinper + yp * cosper;
 
-            const T tanv_p = p.tanvPer[per];
+            const T tanv_p = p.tanv_per[per];
 
             T ga1 = p.guu[klp] * p.tanu[delta_l] * p.tanu[delta_l] +
                     p.guv[klp] * p.tanu[delta_l] * tanv_p +
@@ -335,7 +335,7 @@ RegularizedIntegralsOperator<T>::RegularizedIntegralsOperator(
     : sizes_(sizes), sg_(sg), stream_(nullptr) {
     nvper_ = (sizes_.nZeta == 1) ? 64 : sizes_.nfp;
 
-    // tan-half-angle tables (host-computed, vmecpp's computeConstants).
+    // tan-half-angle tables (host-computed, vmecpp's compute_constants).
     const double epsTan = 1.0e-15;
     const double bigNo = 1.0e50;
 
@@ -374,10 +374,10 @@ RegularizedIntegralsOperator<T>::RegularizedIntegralsOperator(
         }  // per
     }
 
-    uploadConverted(tanu, &tanu_);
-    uploadConverted(tanv, &tanv_);
-    uploadConverted(tanv_per, &tanv_per_);
-    uploadConverted(sizes_.wInt, &w_int_);
+    upload_converted(tanu, &tanu_);
+    upload_converted(tanv, &tanv_);
+    upload_converted(tanv_per, &tanv_per_);
+    upload_converted(sizes_.wInt, &w_int_);
 
     greenp_.allocate(sizes_.nZnT * sizes_.nThetaEven * sizes_.nZeta);
     gstore_.allocate(sizes_.nThetaEven * sizes_.nZeta);
@@ -401,12 +401,12 @@ void RegularizedIntegralsOperator<T>::update(const T* d_bdotn) {
     p.auu = sg_.auu();
     p.auv = sg_.auv();
     p.avv = sg_.avv();
-    p.cosPer = sg_.cosPer();
-    p.sinPer = sg_.sinPer();
+    p.cos_per = sg_.cos_per();
+    p.sin_per = sg_.sin_per();
     p.tanu = tanu_.data();
     p.tanv = tanv_.data();
-    p.tanvPer = tanv_per_.data();
-    p.bDotN = d_bdotn;
+    p.tanv_per = tanv_per_.data();
+    p.b_dot_n = d_bdotn;
     p.wInt = w_int_.data();
     p.nZeta = sizes_.nZeta;
     p.nThetaEven = sizes_.nThetaEven;
@@ -418,21 +418,21 @@ void RegularizedIntegralsOperator<T>::update(const T* d_bdotn) {
     p.gstore = gstore_.data();
 
     if (p.axisymmetric) {
-        launchChecked(
-            reinterpret_cast<const void*>(&regularizedGreenpAxisymKernel<T>),
+        launch_checked(
+            reinterpret_cast<const void*>(&regularized_greenp_axisym_kernel<T>),
             sizes_.nZnT * sizes_.nThetaEven, BLOCK_SIZE, p, stream_,
             "RegularizedIntegralsOperator::update: greenp (axisym)");
-        launchChecked(
-            reinterpret_cast<const void*>(&regularizedGstoreAxisymKernel<T>),
+        launch_checked(
+            reinterpret_cast<const void*>(&regularized_gstore_axisym_kernel<T>),
             sizes_.nThetaEven, BLOCK_SIZE, p, stream_,
             "RegularizedIntegralsOperator::update: gstore (axisym)");
     } else {
-        launchChecked(
-            reinterpret_cast<const void*>(&regularizedGreenpKernel<T>),
+        launch_checked(
+            reinterpret_cast<const void*>(&regularized_greenp_kernel<T>),
             sizes_.nZnT * sizes_.nThetaEven * sizes_.nZeta, BLOCK_SIZE, p,
             stream_, "RegularizedIntegralsOperator::update: greenp");
-        launchChecked(
-            reinterpret_cast<const void*>(&regularizedGstoreKernel<T>),
+        launch_checked(
+            reinterpret_cast<const void*>(&regularized_gstore_kernel<T>),
             sizes_.nThetaEven * sizes_.nZeta, BLOCK_SIZE, p, stream_,
             "RegularizedIntegralsOperator::update: gstore");
     }

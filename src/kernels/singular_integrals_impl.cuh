@@ -22,25 +22,25 @@ namespace {
 
 constexpr int BLOCK_SIZE = 256;
 
-inline int gridSize(int n) {
+inline int grid_size(int n) {
     return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 template <class KernelParams>
-void launchChecked(const void* func,
+void launch_checked(const void* func,
                    int n,
                    int block,
                    const KernelParams& params,
                    cudaStream_t stream,
                    const char* tag) {
     void* kargs[] = {const_cast<KernelParams*>(&params)};
-    check_cuda(cudaLaunchKernel(func, dim3(gridSize(n)), dim3(block), kargs, 0,
+    check_cuda(cudaLaunchKernel(func, dim3(grid_size(n)), dim3(block), kargs, 0,
                                 stream),
                tag);
 }
 
 template <class T>
-void uploadConverted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
+void upload_converted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
     std::vector<T> converted(src.size());
     for (std::size_t i = 0; i < src.size(); ++i) {
         converted[i] = static_cast<T>(src[i]);
@@ -55,7 +55,7 @@ template <class T>
 struct SingularKernelParams {
     // Local quadratic forms of the metric (a, b2, c) and second fundamental
     // form (A, B2, C); passed explicitly so the unit tests can feed
-    // synthetic geometry (vmecpp's prepareUpdate signature).
+    // synthetic geometry (vmecpp's prepare_update signature).
     const T* a;
     const T* b2;
     const T* c;
@@ -70,7 +70,7 @@ struct SingularKernelParams {
     const T* mscale;
     const T* nscale;
     // Source + weights + coefficients.
-    const T* bDotN;
+    const T* b_dot_n;
     const T* wInt;
     const T* cmns;
     // Sizes.
@@ -82,7 +82,7 @@ struct SingularKernelParams {
     int nZnT;
     int mnfull;
     bool lasym;
-    bool fullUpdate;
+    bool full_update;
     // T/S tables and per-point constants.
     T* sqrtc2;
     T* sqrta2;
@@ -97,17 +97,17 @@ struct SingularKernelParams {
     T* slp;
     T* slm;
     // Outputs.
-    T* bvecSin;
-    T* bvecCos;
-    T* grpmnSin;
-    T* grpmnCos;
+    T* bvec_sin;
+    T* bvec_cos;
+    T* grpmn_sin;
+    T* grpmn_cos;
 };
 
 // Per-point constants and the T_l^+/- recurrences (and, on full updates, the
 // S_l^+/- combinations). One thread per surface point; all recurrence state
 // stays in registers.
 template <class T>
-__global__ void singularPrepareKernel(SingularKernelParams<T> p) {
+__global__ void singular_prepare_kernel(SingularKernelParams<T> p) {
     const int kl = blockIdx.x * blockDim.x + threadIdx.x;
     if (kl >= p.nZnT) return;
 
@@ -126,7 +126,7 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
     p.sqrta2[kl] = sqrta2;
 
     T R1p = 0, R1m = 0, R0p = 0, R0m = 0, Ra1p = 0, Ra1m = 0;
-    if (p.fullUpdate) {
+    if (p.full_update) {
         const T A = p.A[kl];
         const T B2 = p.B2[kl];
         const T C = p.C[kl];
@@ -195,13 +195,13 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
     // zero-seed Miller is known to misconverge (spurious modes never damp).
     // Formula: L * ln(B/A) < ln(1e10) -> B/A < exp(ln(1e10)/L).
     constexpr double LOG_GROWTH_THRESHOLD = 10.0 * 2.30258509299;  // ln(1e10)
-    const T logRatioP = (am > ap && ap > T(0)) ? log(am / ap) : T(0);
-    const bool useBackwardP =
-        static_cast<double>(L) * static_cast<double>(logRatioP) >
+    const T log_ratio_p = (am > ap && ap > T(0)) ? log(am / ap) : T(0);
+    const bool use_backward_p =
+        static_cast<double>(L) * static_cast<double>(log_ratio_p) >
         LOG_GROWTH_THRESHOLD;
-    const T logRatioM = (ap > am && am > T(0)) ? log(ap / am) : T(0);
-    const bool useBackwardM =
-        static_cast<double>(L) * static_cast<double>(logRatioM) >
+    const T log_ratio_m = (ap > am && am > T(0)) ? log(ap / am) : T(0);
+    const bool use_backward_m =
+        static_cast<double>(L) * static_cast<double>(log_ratio_m) >
         LOG_GROWTH_THRESHOLD;
 
     // Miller seed: double keeps vmecpp's 1e-300; float needs a value above
@@ -216,7 +216,7 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
 
     // --- T^+: A = ap, B = am ---
     p.tlp[kl] = T0p;
-    if (useBackwardP) {
+    if (use_backward_p) {
         // forward unstable -> use backward recurrence.
         T T_hi = 0;
         T T_cur = seed;
@@ -229,8 +229,8 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
             T_cur = T_lo;
             if (l - 1 <= L) { p.tlp[(l - 1) * p.nZnT + kl] = T_lo; }
         }
-        const T scaleP = T0p / p.tlp[kl];
-        for (int l = 0; l <= L; ++l) { p.tlp[l * p.nZnT + kl] *= scaleP; }
+        const T scale_p = T0p / p.tlp[kl];
+        for (int l = 0; l <= L; ++l) { p.tlp[l * p.nZnT + kl] *= scale_p; }
     } else {
         // forward stable.
         T T_prev = 0;  // T^+_{-1}
@@ -249,7 +249,7 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
 
     // --- T^-: A = am, B = ap ---
     p.tlm[kl] = T0m;
-    if (useBackwardM) {
+    if (use_backward_m) {
         // forward unstable -> use backward recurrence.
         T T_hi = 0;
         T T_cur = seed;
@@ -262,8 +262,8 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
             T_cur = T_lo;
             if (l - 1 <= L) { p.tlm[(l - 1) * p.nZnT + kl] = T_lo; }
         }
-        const T scaleM = T0m / p.tlm[kl];
-        for (int l = 0; l <= L; ++l) { p.tlm[l * p.nZnT + kl] *= scaleM; }
+        const T scale_m = T0m / p.tlm[kl];
+        for (int l = 0; l <= L; ++l) { p.tlm[l * p.nZnT + kl] *= scale_m; }
     } else {
         // forward stable.
         T T_prev = 0;  // T^-_{-1}
@@ -281,7 +281,7 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
     }
 
     // --- S_l^+/- from T (Eq. (A17)) ---
-    if (p.fullUpdate) {
+    if (p.full_update) {
         T Tl1p = 0;  // T^+_{-1}
         T Tl1m = 0;  // T^-_{-1}
         int sgn = 1;
@@ -306,7 +306,7 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
 // fl -> row -> 4-wide-chunk accumulation order exactly (the buf[] pattern is
 // a CPU-vectorization artifact but defines the summation order).
 template <class T>
-__global__ void singularBvecKernel(SingularKernelParams<T> p) {
+__global__ void singular_bvec_kernel(SingularKernelParams<T> p) {
     const int mn = blockIdx.x * blockDim.x + threadIdx.x;
     if (mn >= p.mnfull) return;
 
@@ -344,7 +344,7 @@ __global__ void singularBvecKernel(SingularKernelParams<T> p) {
                                        cmns_factor;
                         accum += (p.tlp[fl * p.nZnT + klRel] +
                                   p.tlm[fl * p.nZnT + klRel]) *
-                                 p.bDotN[klRel] * p.wInt[l] * sinp;
+                                 p.b_dot_n[klRel] * p.wInt[l] * sinp;
                     }
                 }
             } else {
@@ -361,10 +361,10 @@ __global__ void singularBvecKernel(SingularKernelParams<T> p) {
                 for (; k + 3 < p.nZeta; k += 4) {
                     const int klRel = l * p.nZeta + k;
                     const int idx_nk = n_abs * p.nZeta + k;
-                    T c0 = p.bDotN[klRel + 0] * p.wInt[l];
-                    T c1 = p.bDotN[klRel + 1] * p.wInt[l];
-                    T c2 = p.bDotN[klRel + 2] * p.wInt[l];
-                    T c3 = p.bDotN[klRel + 3] * p.wInt[l];
+                    T c0 = p.b_dot_n[klRel + 0] * p.wInt[l];
+                    T c1 = p.b_dot_n[klRel + 1] * p.wInt[l];
+                    T c2 = p.b_dot_n[klRel + 2] * p.wInt[l];
+                    T c3 = p.b_dot_n[klRel + 3] * p.wInt[l];
 
                     T factor0, factor1, factor2, factor3;
                     if (is_posn) {
@@ -409,26 +409,26 @@ __global__ void singularBvecKernel(SingularKernelParams<T> p) {
                         // sin(mu + |n|v) * cmns(l,n,m)
                         factor = coeff1k + coeff2k;
                     }
-                    const T c = p.bDotN[klRel] * p.wInt[l];
+                    const T c = p.b_dot_n[klRel] * p.wInt[l];
                     accum += tl[klRel] * c * factor;
                 }
             }
         }
     }
 
-    p.bvecSin[mn] = accum;
+    p.bvec_sin[mn] = accum;
     if (p.lasym) {
         // TODO(port): the cos-part needs the cos(mu -+ |n|v) factors; the
         // symmetric golden case does not exercise it. Implemented when the
         // lasym golden data becomes available.
-        p.bvecCos[mn] = 0;
+        p.bvec_cos[mn] = 0;
     }
 }
 
 // Singular part of the system-matrix kernel: one thread per (mode, point),
 // accumulating over fl in vmecpp's order.
 template <class T>
-__global__ void singularGrpmnKernel(SingularKernelParams<T> p) {
+__global__ void singular_grpmn_kernel(SingularKernelParams<T> p) {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
     const int mn = idx / p.nZnT;
     const int klRel = idx - mn * p.nZnT;
@@ -483,8 +483,8 @@ __global__ void singularGrpmnKernel(SingularKernelParams<T> p) {
         }
     }
 
-    p.grpmnSin[mn * p.nZnT + klRel] = accum;
-    if (p.lasym) { p.grpmnCos[mn * p.nZnT + klRel] = 0; }
+    p.grpmn_sin[mn * p.nZnT + klRel] = accum;
+    if (p.lasym) { p.grpmn_cos[mn * p.nZnT + klRel] = 0; }
 }
 
 template <class T>
@@ -498,8 +498,8 @@ SingularIntegralsOperator<T>::SingularIntegralsOperator(
     mnfull_ = (2 * nf_ + 1) * (mf_ + 1);
 
     SingularCoefficients coeffs(nf_, mf_);
-    uploadConverted(coeffs.cmns, &cmns_);
-    uploadConverted(sizes_.wInt, &w_int_);
+    upload_converted(coeffs.cmns, &cmns_);
+    upload_converted(sizes_.wInt, &w_int_);
 
     sqrtc2_.allocate(sizes_.nZnT);
     sqrta2_.allocate(sizes_.nZnT);
@@ -524,13 +524,13 @@ SingularIntegralsOperator<T>::SingularIntegralsOperator(
 
 template <class T>
 void SingularIntegralsOperator<T>::update(const T* d_bdotn, bool full_update) {
-    prepareUpdate(sg_.guu(), sg_.guv(), sg_.gvv(), sg_.auu(), sg_.auv(),
+    prepare_update(sg_.guu(), sg_.guv(), sg_.gvv(), sg_.auu(), sg_.auv(),
                   sg_.avv(), full_update);
-    performUpdate(d_bdotn, full_update);
+    perform_update(d_bdotn, full_update);
 }
 
 template <class T>
-void SingularIntegralsOperator<T>::prepareUpdate(const T* d_a,
+void SingularIntegralsOperator<T>::prepare_update(const T* d_a,
                                                  const T* d_b2,
                                                  const T* d_c,
                                                  const T* d_A,
@@ -550,7 +550,7 @@ void SingularIntegralsOperator<T>::prepareUpdate(const T* d_a,
     p.sinnv = fb_.sinnv();
     p.mscale = fb_.mscale();
     p.nscale = fb_.nscale();
-    p.bDotN = nullptr;
+    p.b_dot_n = nullptr;
     p.wInt = w_int_.data();
     p.cmns = cmns_.data();
     p.nf = nf_;
@@ -561,7 +561,7 @@ void SingularIntegralsOperator<T>::prepareUpdate(const T* d_a,
     p.nZnT = sizes_.nZnT;
     p.mnfull = mnfull_;
     p.lasym = sizes_.lasym;
-    p.fullUpdate = full_update;
+    p.full_update = full_update;
     p.sqrtc2 = sqrtc2_.data();
     p.sqrta2 = sqrta2_.data();
     p.r1p = r1p_.data();
@@ -574,18 +574,18 @@ void SingularIntegralsOperator<T>::prepareUpdate(const T* d_a,
     p.tlm = tlm_.data();
     p.slp = slp_.data();
     p.slm = slm_.data();
-    p.bvecSin = bvec_sin_.data();
-    p.bvecCos = bvec_cos_.data();
-    p.grpmnSin = grpmn_sin_.data();
-    p.grpmnCos = grpmn_cos_.data();
+    p.bvec_sin = bvec_sin_.data();
+    p.bvec_cos = bvec_cos_.data();
+    p.grpmn_sin = grpmn_sin_.data();
+    p.grpmn_cos = grpmn_cos_.data();
 
-    launchChecked(reinterpret_cast<const void*>(&singularPrepareKernel<T>),
+    launch_checked(reinterpret_cast<const void*>(&singular_prepare_kernel<T>),
                   sizes_.nZnT, BLOCK_SIZE, p, stream_,
-                  "SingularIntegralsOperator::prepareUpdate: prepare");
+                  "SingularIntegralsOperator::prepare_update: prepare");
 }
 
 template <class T>
-void SingularIntegralsOperator<T>::performUpdate(const T* d_bdotn,
+void SingularIntegralsOperator<T>::perform_update(const T* d_bdotn,
                                                  bool full_update) {
     SingularKernelParams<T> p{};
     p.a = nullptr;
@@ -600,7 +600,7 @@ void SingularIntegralsOperator<T>::performUpdate(const T* d_bdotn,
     p.sinnv = fb_.sinnv();
     p.mscale = fb_.mscale();
     p.nscale = fb_.nscale();
-    p.bDotN = d_bdotn;
+    p.b_dot_n = d_bdotn;
     p.wInt = w_int_.data();
     p.cmns = cmns_.data();
     p.nf = nf_;
@@ -611,7 +611,7 @@ void SingularIntegralsOperator<T>::performUpdate(const T* d_bdotn,
     p.nZnT = sizes_.nZnT;
     p.mnfull = mnfull_;
     p.lasym = sizes_.lasym;
-    p.fullUpdate = full_update;
+    p.full_update = full_update;
     p.sqrtc2 = sqrtc2_.data();
     p.sqrta2 = sqrta2_.data();
     p.r1p = r1p_.data();
@@ -624,18 +624,18 @@ void SingularIntegralsOperator<T>::performUpdate(const T* d_bdotn,
     p.tlm = tlm_.data();
     p.slp = slp_.data();
     p.slm = slm_.data();
-    p.bvecSin = bvec_sin_.data();
-    p.bvecCos = bvec_cos_.data();
-    p.grpmnSin = grpmn_sin_.data();
-    p.grpmnCos = grpmn_cos_.data();
+    p.bvec_sin = bvec_sin_.data();
+    p.bvec_cos = bvec_cos_.data();
+    p.grpmn_sin = grpmn_sin_.data();
+    p.grpmn_cos = grpmn_cos_.data();
 
-    launchChecked(reinterpret_cast<const void*>(&singularBvecKernel<T>),
+    launch_checked(reinterpret_cast<const void*>(&singular_bvec_kernel<T>),
                   mnfull_, BLOCK_SIZE, p, stream_,
-                  "SingularIntegralsOperator::performUpdate: bvec");
+                  "SingularIntegralsOperator::perform_update: bvec");
     if (full_update) {
-        launchChecked(reinterpret_cast<const void*>(&singularGrpmnKernel<T>),
+        launch_checked(reinterpret_cast<const void*>(&singular_grpmn_kernel<T>),
                       mnfull_ * sizes_.nZnT, BLOCK_SIZE, p, stream_,
-                      "SingularIntegralsOperator::performUpdate: grpmn");
+                      "SingularIntegralsOperator::perform_update: grpmn");
     }
 }
 

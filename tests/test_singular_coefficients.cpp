@@ -36,17 +36,17 @@ int main() {
                     // Note: n! = gamma(n + 1)
                     // Note: lgamma(n + 1) == log(n!)
                     // exp(lgamma(n +1) - lgamma(m+1)) == n! / m!
-                    const double numFac = std::lgamma((m + n + l) / 2 + 1);
-                    const double denFac1 = std::lgamma((m + n - l) / 2 + 1);
-                    const double denFac2 =
+                    const double num_fac = std::lgamma((m + n + l) / 2 + 1);
+                    const double den_fac_1 = std::lgamma((m + n - l) / 2 + 1);
+                    const double den_fac_2 =
                         std::lgamma((l + std::abs(m - n)) / 2 + 1);
-                    const double denFac3 =
+                    const double den_fac_3 =
                         std::lgamma((l - std::abs(m - n)) / 2 + 1);
 
-                    const double cmnRef =
-                        sign * std::exp(numFac - denFac1 - denFac2 - denFac3);
+                    const double cmn_ref =
+                        sign * std::exp(num_fac - den_fac_1 - den_fac_2 - den_fac_3);
 
-                    if (!is_close_rel_abs(cmnRef, sc.cmn[lnm], 1e-12)) {
+                    if (!is_close_rel_abs(cmn_ref, sc.cmn[lnm], 1e-12)) {
                         ok = false;
                     }
                 }  // l

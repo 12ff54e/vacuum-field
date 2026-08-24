@@ -26,20 +26,20 @@ using vfield::MgridProvider;
 using vfield::Sizes;
 using vfield::SurfaceGeometryOperator;
 using vfield::test::check;
-using vfield::test::compareZetaFast;
-using vfield::test::flatArray;
+using vfield::test::compare_zeta_fast;
+using vfield::test::flat_array;
 using vfield::test::is_close_rel_abs;
-using vfield::test::loadGolden;
-using vfield::test::nestedArray;
+using vfield::test::load_golden;
+using vfield::test::nested_array;
 using vfield::test::summary;
-using vfield::test::toDevice;
-using vfield::test::toHost;
+using vfield::test::to_device;
+using vfield::test::to_host;
 
 namespace {
 
 const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
-std::string jsonPath(const std::string& checkpoint, int iter) {
+std::string json_path(const std::string& checkpoint, int iter) {
     std::ostringstream oss;
     oss << DATA_DIR << checkpoint << "/" << checkpoint << "_00015_"
         << std::setw(6) << std::setfill('0') << iter
@@ -47,9 +47,9 @@ std::string jsonPath(const std::string& checkpoint, int iter) {
     return oss.str();
 }
 
-void runIteration(int iter) {
-    const json::Value vacuum = loadGolden(jsonPath("vac1n_vacuum", iter));
-    const json::Value bextern = loadGolden(jsonPath("vac1n_bextern", iter));
+void run_iteration(int iter) {
+    const json::Value vacuum = load_golden(json_path("vac1n_vacuum", iter));
+    const json::Value bextern = load_golden(json_path("vac1n_bextern", iter));
 
     const bool full_update =
         (static_cast<double>(vacuum.at("ivac_skip")) == 0.0);
@@ -61,32 +61,32 @@ void runIteration(int iter) {
 
     // Decode the LCFS inputs exactly like vmecpp's large tests.
     std::vector<double> rcc(sizes.mnsize), rss(sizes.mnsize);
-    fb.cosToCcSs(flatArray(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
+    fb.cos_to_cc_ss(flat_array(vacuum.at("rmnc")), rcc, rss, sizes.ntor,
                  sizes.mpol);
     std::vector<double> zsc(sizes.mnsize), zcs(sizes.mnsize);
-    fb.sinToScCs(flatArray(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
+    fb.sin_to_sc_cs(flat_array(vacuum.at("zmns")), zsc, zcs, sizes.ntor,
                  sizes.mpol);
 
     // cth_like_free_bdy: extcur = [4700, 1000] A (see the indata JSON).
     MgridProvider mgrid;
-    mgrid.loadFile(DATA_DIR + "../mgrid_cth_like.nc",
+    mgrid.load_file(DATA_DIR + "../mgrid_cth_like.nc",
                    std::vector<double>{4700.0, 1000.0});
 
     FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<double> sg(sizes, fbd);
     ExternalFieldOperator<double> ef(sizes, sg, mgrid);
 
-    auto d_rcc = toDevice(rcc);
-    auto d_rss = toDevice(rss);
-    auto d_zsc = toDevice(zsc);
-    auto d_zcs = toDevice(zcs);
-    auto d_raxis = toDevice(flatArray(vacuum.at("raxis_nestor")));
-    auto d_zaxis = toDevice(flatArray(vacuum.at("zaxis_nestor")));
+    auto d_rcc = to_device(rcc);
+    auto d_rss = to_device(rss);
+    auto d_zsc = to_device(zsc);
+    auto d_zcs = to_device(zcs);
+    auto d_raxis = to_device(flat_array(vacuum.at("raxis_nestor")));
+    auto d_zaxis = to_device(flat_array(vacuum.at("zaxis_nestor")));
 
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
               d_zcs.data(), nullptr, nullptr, sign_j, full_update);
 
-    // netToroidalCurrent = cTor / MU_0 (ideal_mhd_model.cc), plascur in A.
+    // net_toroidal_current = cTor / MU_0 (ideal_mhd_model.cc), plascur in A.
     const double net_toroidal_current =
         static_cast<double>(vacuum.at("plascur")) /
         (4.0 * std::numbers::pi * 1.0e-7);
@@ -100,9 +100,9 @@ void runIteration(int iter) {
           ("axis_current " + iter_name));
 
     // Axis polygon, first field-period module [3][nZeta] and the closure.
-    const auto xpts = nestedArray(bextern.at("xpts_axis"));
+    const auto xpts = nested_array(bextern.at("xpts_axis"));
     const auto axis_xyz =
-        toHost(ef.axisXyz(), 3 * (sizes.nZeta * ef.nvper() + 1));
+        to_host(ef.axis_xyz(), 3 * (sizes.nZeta * ef.nvper() + 1));
     bool axis_ok = true;
     for (int k = 0; k < sizes.nZeta; ++k) {
         for (int j = 0; j < 3; ++j) {
@@ -114,29 +114,29 @@ void runIteration(int iter) {
     check(axis_ok, ("xpts_axis " + iter_name));
 
     // mgrid interpolation on its own.
-    check(compareZetaFast(nestedArray(bextern.at("mgrid_brad")),
-                          toHost(ef.interpBr(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bextern.at("mgrid_brad")),
+                          to_host(ef.interp_br(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("mgrid_brad " + iter_name));
-    check(compareZetaFast(nestedArray(bextern.at("mgrid_bphi")),
-                          toHost(ef.interpBp(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bextern.at("mgrid_bphi")),
+                          to_host(ef.interp_bp(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("mgrid_bphi " + iter_name));
-    check(compareZetaFast(nestedArray(bextern.at("mgrid_bz")),
-                          toHost(ef.interpBz(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bextern.at("mgrid_bz")),
+                          to_host(ef.interp_bz(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("mgrid_bz " + iter_name));
 
-    // Axis-current contribution on its own (brad - mgrid_brad = curtorBr).
-    const auto brad = nestedArray(bextern.at("brad"));
-    const auto bphi = nestedArray(bextern.at("bphi"));
-    const auto bz = nestedArray(bextern.at("bz"));
-    const auto mgrid_brad = nestedArray(bextern.at("mgrid_brad"));
-    const auto mgrid_bphi = nestedArray(bextern.at("mgrid_bphi"));
-    const auto mgrid_bz = nestedArray(bextern.at("mgrid_bz"));
-    const auto curtor_br = toHost(ef.curtorBr(), sizes.nZnT);
-    const auto curtor_bp = toHost(ef.curtorBp(), sizes.nZnT);
-    const auto curtor_bz = toHost(ef.curtorBz(), sizes.nZnT);
+    // Axis-current contribution on its own (brad - mgrid_brad = curtor_br).
+    const auto brad = nested_array(bextern.at("brad"));
+    const auto bphi = nested_array(bextern.at("bphi"));
+    const auto bz = nested_array(bextern.at("bz"));
+    const auto mgrid_brad = nested_array(bextern.at("mgrid_brad"));
+    const auto mgrid_bphi = nested_array(bextern.at("mgrid_bphi"));
+    const auto mgrid_bz = nested_array(bextern.at("mgrid_bz"));
+    const auto curtor_br = to_host(ef.curtor_br(), sizes.nZnT);
+    const auto curtor_bp = to_host(ef.curtor_bp(), sizes.nZnT);
+    const auto curtor_bz = to_host(ef.curtor_bz(), sizes.nZnT);
     bool curtor_ok = true;
     for (int l = 0; l < sizes.nThetaEff; ++l) {
         for (int k = 0; k < sizes.nZeta; ++k) {
@@ -152,16 +152,16 @@ void runIteration(int iter) {
     check(curtor_ok, ("axis-current contribution " + iter_name));
 
     // Quantities derived from the full field.
-    check(compareZetaFast(nestedArray(bextern.at("bexu")),
-                          toHost(ef.bSubU(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bextern.at("bexu")),
+                          to_host(ef.b_sub_u(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("bexu " + iter_name));
-    check(compareZetaFast(nestedArray(bextern.at("bexv")),
-                          toHost(ef.bSubV(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bextern.at("bexv")),
+                          to_host(ef.b_sub_v(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("bexv " + iter_name));
-    check(compareZetaFast(nestedArray(bextern.at("bexn")),
-                          toHost(ef.bDotN(), sizes.nZnT), sizes.nThetaEff,
+    check(compare_zeta_fast(nested_array(bextern.at("bexn")),
+                          to_host(ef.b_dot_n(), sizes.nZnT), sizes.nThetaEff,
                           tol) == 0,
           ("bexn " + iter_name));
 }
@@ -169,7 +169,7 @@ void runIteration(int iter) {
 }  // namespace
 
 int main() {
-    runIteration(53);
-    runIteration(54);
+    run_iteration(53);
+    run_iteration(54);
     return summary();
 }

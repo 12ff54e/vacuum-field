@@ -4,10 +4,10 @@
 // surface geometry, the external field (mgrid + axis current), the
 // singular/regularized Green's-function integrals, and the Laplace solve,
 // then reconstructs the tangential derivatives of the scalar potential
-// (potU/potV), the covariant vacuum field (bSubU/bSubV), the vacuum magnetic
-// pressure bSqVac = |B|^2/2 (no mu0, VMEC force convention), the cylindrical
+// (pot_u/pot_v), the covariant vacuum field (b_sub_u/b_sub_v), the vacuum magnetic
+// pressure b_sq_vac = |B|^2/2 (no mu0, VMEC force convention), the cylindrical
 // components B_R/B_phi/B_Z, and the surface-integral scalars
-// bSubUVac/bSubVVac. The OpenMP partitioning and the VmecCheckpoint
+// b_sub_u_vac/b_sub_v_vac. The OpenMP partitioning and the VmecCheckpoint
 // machinery are dropped; full_update == (ivacskip == 0).
 #ifndef VFIELD_FREE_BOUNDARY_VACUUM_FIELD_SOLVER_HPP_
 #define VFIELD_FREE_BOUNDARY_VACUUM_FIELD_SOLVER_HPP_
@@ -50,10 +50,10 @@ class VacuumFieldSolver {
 
     // Mirrors Nestor::update minus checkpoints/partitioning. The LCFS
     // coefficient arrays are device pointers to mnsize-sized n-major arrays
-    // (antisymmetric ones may be nullptr when !lasym); rAxis/zAxis are
+    // (antisymmetric ones may be nullptr when !lasym); r_axis/z_axis are
     // device pointers over one field-period module [nZeta];
-    // netToroidalCurrent is in Amperes (cTor/MU_0); bsubuVac/bsubvVac are
-    // host out-scalars (signJ * 2*pi surface integrals of bSubU/bSubV).
+    // net_toroidal_current is in Amperes (cTor/MU_0); bsubu_vac/bsubv_vac are
+    // host out-scalars (signJ * 2*pi surface integrals of b_sub_u/b_sub_v).
     void update(const T* d_rcc,
                 const T* d_rss,
                 const T* d_rsc,
@@ -71,29 +71,29 @@ class VacuumFieldSolver {
                 bool full_update);
 
     // [nZnT] — device-resident outputs.
-    const T* potU() const { return potu_.data(); }
-    const T* potV() const { return potv_.data(); }
-    const T* bSubU() const { return bsubu_.data(); }
-    const T* bSubV() const { return bsubv_.data(); }
-    const T* bSqVac() const { return bsqvac_.data(); }
-    const T* vacuumBR() const { return vacuum_br_.data(); }
-    const T* vacuumBPhi() const { return vacuum_bphi_.data(); }
-    const T* vacuumBZ() const { return vacuum_bz_.data(); }
+    const T* pot_u() const { return potu_.data(); }
+    const T* pot_v() const { return potv_.data(); }
+    const T* b_sub_u() const { return bsubu_.data(); }
+    const T* b_sub_v() const { return bsubv_.data(); }
+    const T* b_sq_vac() const { return bsqvac_.data(); }
+    const T* vacuum_b_r() const { return vacuum_br_.data(); }
+    const T* vacuum_b_phi() const { return vacuum_bphi_.data(); }
+    const T* vacuum_b_z() const { return vacuum_bz_.data(); }
     // [mnpd] — the scalar-potential Fourier coefficients.
     const T* potential() const { return ls_.solution(); }
 
-    const SurfaceGeometryOperator<T>& surfaceGeometry() const { return sg_; }
-    const ExternalFieldOperator<T>& externalField() const { return ef_; }
-    const SingularIntegralsOperator<T>& singularIntegrals() const {
+    const SurfaceGeometryOperator<T>& surface_geometry() const { return sg_; }
+    const ExternalFieldOperator<T>& external_field() const { return ef_; }
+    const SingularIntegralsOperator<T>& singular_integrals() const {
         return si_;
     }
-    const RegularizedIntegralsOperator<T>& regularizedIntegrals() const {
+    const RegularizedIntegralsOperator<T>& regularized_integrals() const {
         return ri_;
     }
-    const LaplaceSolverOperator<T>& laplaceSolver() const { return ls_; }
+    const LaplaceSolverOperator<T>& laplace_solver() const { return ls_; }
 
    private:
-    static MgridProvider loadMgrid(const Params& params);
+    static MgridProvider load_mgrid(const Params& params);
 
     Sizes sizes_;
     FourierBasis fb_;
@@ -116,7 +116,7 @@ class VacuumFieldSolver {
     DeviceBuffer<T> vacuum_br_;
     DeviceBuffer<T> vacuum_bphi_;
     DeviceBuffer<T> vacuum_bz_;
-    DeviceBuffer<T> surface_integrals_;  // [2]: bSubUVac, bSubVVac
+    DeviceBuffer<T> surface_integrals_;  // [2]: b_sub_u_vac, b_sub_v_vac
 };
 
 }  // namespace vfield

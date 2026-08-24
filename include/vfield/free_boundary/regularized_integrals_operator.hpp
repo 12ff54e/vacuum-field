@@ -6,7 +6,7 @@
 // analytic local approximation in the tan-half-angle variables), evaluated
 // over the whole surface and the nfp field-period images. greenp holds the
 // regularized normal-derivative kernel per source point, gstore the
-// regularized source term (bDotN-weighted). The exact singularity (source
+// regularized source term (b_dot_n-weighted). The exact singularity (source
 // point, first period) is skipped — it is handled analytically in
 // SingularIntegralsOperator. For axisymmetric plasmas (nZeta == 1) the
 // toroidal integral is performed over nvper = 64 equally-spaced toroidal
@@ -27,7 +27,7 @@ class RegularizedIntegralsOperator {
     RegularizedIntegralsOperator(const Sizes& sizes,
                                  const SurfaceGeometryOperator<T>& sg);
 
-    // bDotN is a device pointer [nZnT] (the external-field normal component).
+    // b_dot_n is a device pointer [nZnT] (the external-field normal component).
     // Only ever called on full updates (rcosuv/rsinuv are full-update
     // quantities).
     void update(const T* d_bdotn);

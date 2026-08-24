@@ -97,12 +97,12 @@ Outputs run_pipeline(const Sizes& sizes,
     if (sizes.lasym) {
         solver.update(d_rcc.data(), d_rss.data(), d_zero.data(), d_zero.data(),
                       d_zsc.data(), d_zcs.data(), d_zero.data(), d_zero.data(),
-                      SIGN_J, d_raxis.data(), d_zaxis.data(), &bsubu_vac,
-                      &bsubv_vac, AXIS_CURRENT, true);
+                      SIGN_J, d_raxis.data(), d_zaxis.data(), bsubu_vac,
+                      bsubv_vac, AXIS_CURRENT, true);
     } else {
         solver.update(d_rcc.data(), d_rss.data(), nullptr, nullptr,
                       d_zsc.data(), d_zcs.data(), nullptr, nullptr, SIGN_J,
-                      d_raxis.data(), d_zaxis.data(), &bsubu_vac, &bsubv_vac,
+                      d_raxis.data(), d_zaxis.data(), bsubu_vac, bsubv_vac,
                       AXIS_CURRENT, true);
     }
 

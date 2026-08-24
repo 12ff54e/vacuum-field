@@ -10,6 +10,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace vfield {
 
@@ -23,7 +24,7 @@ inline std::string cuda_error_string(cudaError_t err) {
 }
 
 // Throws VfieldError when `err != cudaSuccess`; returns otherwise.
-inline void check_cuda(cudaError_t err, const char* tag) {
+inline void check_cuda(cudaError_t err, std::string_view tag) {
     if (err != cudaSuccess) {
         throw VfieldError(std::string(tag) +
                           ": CUDA error: " + cuda_error_string(err));

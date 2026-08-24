@@ -10,6 +10,7 @@
 
 #include "vfield/free_boundary/vacuum_field_solver.hpp"
 
+#include <array>
 #include <cmath>
 #include <numbers>
 #include <vector>
@@ -30,7 +31,7 @@ void launch_checked(const void* func,
                    int block,
                    const KernelParams& params,
                    cudaStream_t stream,
-                   const char* tag) {
+                   std::string_view tag) {
     void* kargs[] = {const_cast<KernelParams*>(&params)};
     check_cuda(cudaLaunchKernel(func, dim3(grid_size(n)), dim3(block), kargs, 0,
                                 stream),
@@ -242,8 +243,10 @@ void VacuumFieldSolver<T>::update(const T* d_rcc,
                                   int sign_of_jacobian,
                                   const T* d_r_axis,
                                   const T* d_z_axis,
-                                  T* bsubu_vac,
-                                  T* bsubv_vac,
+                                  std::optional<std::reference_wrapper<T>>
+                                      bsubu_vac,
+                                  std::optional<std::reference_wrapper<T>>
+                                      bsubv_vac,
                                   T net_toroidal_current,
                                   bool full_update) {
     sg_.update(d_rcc, d_rss, d_rsc, d_rcs, d_zsc, d_zcs, d_zcc, d_zss,
@@ -314,10 +317,10 @@ void VacuumFieldSolver<T>::update(const T* d_rcc,
                   BLOCK_SIZE, p, stream_, "VacuumFieldSolver::update: bsqvac");
 
     // Download the surface-integral scalars (host out-parameters).
-    T integrals[2];
-    surface_integrals_.download(integrals, 2);
-    *bsubu_vac = integrals[0];
-    *bsubv_vac = integrals[1];
+    std::array<T, 2> integrals{};
+    surface_integrals_.download(integrals.data(), 2);
+    if (bsubu_vac.has_value()) { bsubu_vac->get() = integrals[0]; }
+    if (bsubv_vac.has_value()) { bsubv_vac->get() = integrals[1]; }
 }
 
 }  // namespace vfield

@@ -23,6 +23,8 @@
 #include "vfield/free_boundary/surface_geometry_operator.hpp"
 #include "vfield/runtime/device_buffer.cuh"
 
+#include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -53,8 +55,9 @@ class VacuumFieldSolver {
     // coefficient arrays are device pointers to mnsize-sized n-major arrays
     // (antisymmetric ones may be nullptr when !lasym); r_axis/z_axis are
     // device pointers over one field-period module [nZeta];
-    // net_toroidal_current is in Amperes (cTor/MU_0); bsubu_vac/bsubv_vac are
-    // host out-scalars (signJ * 2*pi surface integrals of b_sub_u/b_sub_v).
+    // net_toroidal_current is in Amperes (cTor/MU_0); bsubu_vac/bsubv_vac
+    // are nullable host out-scalars (signJ * 2*pi surface integrals of
+    // b_sub_u/b_sub_v).
     void update(const T* d_rcc,
                 const T* d_rss,
                 const T* d_rsc,
@@ -66,8 +69,8 @@ class VacuumFieldSolver {
                 int sign_of_jacobian,
                 const T* d_r_axis,
                 const T* d_z_axis,
-                T* bsubu_vac,
-                T* bsubv_vac,
+                std::optional<std::reference_wrapper<T>> bsubu_vac,
+                std::optional<std::reference_wrapper<T>> bsubv_vac,
                 T net_toroidal_current,
                 bool full_update);
 

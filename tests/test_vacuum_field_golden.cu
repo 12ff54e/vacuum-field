@@ -75,7 +75,7 @@ void run_iteration(int iter,
     double bsubu_vac = 0.0, bsubv_vac = 0.0;
     solver.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
                   d_zcs.data(), nullptr, nullptr, sign_j, d_raxis.data(),
-                  d_zaxis.data(), &bsubu_vac, &bsubv_vac, net_toroidal_current,
+                  d_zaxis.data(), bsubu_vac, bsubv_vac, net_toroidal_current,
                   full_update);
     (void)bsubu_vac;
     (void)bsubv_vac;

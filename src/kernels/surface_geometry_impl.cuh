@@ -33,7 +33,7 @@ void launch_checked(const void* func,
                    int block,
                    const KernelParams& params,
                    cudaStream_t stream,
-                   const char* tag) {
+                   std::string_view tag) {
     void* kargs[] = {const_cast<KernelParams*>(&params)};
     check_cuda(cudaLaunchKernel(func, dim3(grid_size(n)), dim3(block), kargs, 0,
                                 stream),

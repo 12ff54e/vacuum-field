@@ -77,11 +77,30 @@ void run_iteration(int iter,
                   d_zcs.data(), nullptr, nullptr, sign_j, d_raxis.data(),
                   d_zaxis.data(), bsubu_vac, bsubv_vac, net_toroidal_current,
                   full_update);
-    (void)bsubu_vac;
-    (void)bsubv_vac;
 
     const double tol = 1e-10;
     const std::string iter_name = "iter " + std::to_string(iter);
+
+    // Surface-integral scalars: b_sub_u_vac = signJ*2*pi*sum(wInt*bsubu),
+    // b_sub_v_vac = PLAIN sum(wInt*bsubv) (vmecpp nestor.cc). The golden
+    // grids carry the per-point values; the expected scalars follow from the
+    // same trapezoid weights (ascending order, single accumulator).
+    {
+        const auto gbsubu = nested_array(bsqvac.at("bsubu"));
+        const auto gbsubv = nested_array(bsqvac.at("bsubv"));
+        double exp_u = 0.0, exp_v = 0.0;
+        for (std::size_t l = 0; l < sizes.wInt.size(); ++l) {
+            for (int k = 0; k < sizes.nZeta; ++k) {
+                exp_u += gbsubu[k][l] * sizes.wInt[l];
+                exp_v += gbsubv[k][l] * sizes.wInt[l];
+            }
+        }
+        const double exp_u_vac = sign_j * 2.0 * std::numbers::pi * exp_u;
+        check(is_close_rel_abs(bsubu_vac, exp_u_vac, 1e-9),
+              ("bsubu_vac " + iter_name));
+        check(is_close_rel_abs(bsubv_vac, exp_v, 1e-9),
+              ("bsubv_vac " + iter_name));
+    }
 
     // Potential coefficients (potsin, flat [mnpd]).
     const int mnpd = (2 * sizes.ntor + 1) * (sizes.mpol + 2);

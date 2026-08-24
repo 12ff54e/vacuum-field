@@ -141,8 +141,11 @@ __global__ void bsub_kernel(DriverKernelParams<T> p) {
     p.b_sub_v[kl] = p.pot_v[kl] + p.ef_b_sub_v[kl];
 }
 
-// Surface integrals b_sub_u_vac/b_sub_v_vac = signJ * 2*pi * sum_l wInt[l] *
-// b_sub_u/V (single thread, vmecpp's ascending order).
+// Surface integrals (single thread, vmecpp's ascending order):
+//   b_sub_u_vac = signJ * 2*pi * sum_l wInt[l] * b_sub_u
+//   b_sub_v_vac = sum_l wInt[l] * b_sub_v   (PLAIN sum — vmecpp nestor.cc
+//                 scales only the u-integral; the v-integral feeds the
+//                 rBtor * bSubVVac sign check in the same units as rBtor)
 template <class T>
 __global__ void bsub_surf_integral_kernel(DriverKernelParams<T> p) {
     T accu = 0;
@@ -154,8 +157,7 @@ __global__ void bsub_surf_integral_kernel(DriverKernelParams<T> p) {
     }
     p.surface_integrals[0] =
         T(p.sign_of_jacobian) * T(2.0 * std::numbers::pi) * accu;
-    p.surface_integrals[1] =
-        T(p.sign_of_jacobian) * T(2.0 * std::numbers::pi) * accv;
+    p.surface_integrals[1] = accv;
 }
 
 // Vacuum magnetic pressure and cylindrical components: covariant ->

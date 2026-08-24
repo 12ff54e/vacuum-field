@@ -107,6 +107,10 @@ class LaplaceSolverOperator {
     std::vector<double> matrix_h_;
     std::vector<int> pivots_h_;
     std::vector<double> bvec_h_;
+    // Set by decompose_matrix; solve_for_potential REFUSES to solve without
+    // a valid factorization (a partial update before any full one would
+    // otherwise read pivots[-1] through a zero pivot entry).
+    bool factorized_ = false;
 };
 
 }  // namespace vfield

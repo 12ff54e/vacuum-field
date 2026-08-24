@@ -721,6 +721,7 @@ void LaplaceSolverOperator<T>::decompose_matrix() {
             "matrix (dgetrf-style info=" +
             std::to_string(info) + ")");
     }
+    factorized_ = true;
 }
 
 template <class T>
@@ -772,6 +773,12 @@ void LaplaceSolverOperator<T>::solve_for_potential(const T* d_singular_bvec) {
 
     // Solve on the host in double (the potential is control-adjacent; see
     // lu_solve.hpp).
+    if (!factorized_) {
+        throw VfieldError(
+            "LaplaceSolverOperator::solve_for_potential: no factorization "
+            "available — a partial update must follow a full update "
+            "(decompose_matrix)");
+    }
     bvec_.download(bvec_h_.data(), bvec_h_.size());
     LuSolve::solve(matrix_h_.data(), pivots_h_.data(), bvec_h_.data(), mnpd_);
     // Convert to T explicitly (the host solve runs in double).

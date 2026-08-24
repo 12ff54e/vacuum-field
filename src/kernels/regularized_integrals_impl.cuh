@@ -1,4 +1,4 @@
-// regularized_integrals_impl.cuh — regularized Green's-function kernels.
+// kernels/regularized_integrals_impl.cuh — regularized Green's-function kernels.
 //
 // Included once per scalar type by regularized_integrals_double.cu /
 // regularized_integrals_float.cu; see the explicit-instantiation split. Each

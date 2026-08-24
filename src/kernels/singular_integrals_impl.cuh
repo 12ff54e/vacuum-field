@@ -1,4 +1,4 @@
-// singular_integrals_impl.cuh — T/S recurrence and bvec/grpmn kernels.
+// kernels/singular_integrals_impl.cuh — T/S recurrence and bvec/grpmn kernels.
 //
 // Included once per scalar type by singular_integrals_double.cu /
 // singular_integrals_float.cu; see the explicit-instantiation split. The

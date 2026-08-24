@@ -1,4 +1,4 @@
-// laplace_solver_impl.cuh — Laplace-system assembly kernels.
+// kernels/laplace_solver_impl.cuh — Laplace-system assembly kernels.
 //
 // Included once per scalar type by laplace_solver_double.cu /
 // laplace_solver_float.cu; see the explicit-instantiation split. Every

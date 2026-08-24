@@ -1,4 +1,4 @@
-// vacuum_field_solver_impl.cuh — driver kernels: potential reconstruction,
+// kernels/vacuum_field_solver_impl.cuh — driver kernels: potential reconstruction,
 // covariant vacuum field, surface integrals, magnetic pressure.
 //
 // Included once per scalar type by vacuum_field_solver_double.cu /

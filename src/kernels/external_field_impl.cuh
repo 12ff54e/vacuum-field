@@ -1,4 +1,4 @@
-// external_field_impl.cuh — mgrid interpolation + axis-current kernels.
+// kernels/external_field_impl.cuh — mgrid interpolation + axis-current kernels.
 //
 // Included once per scalar type by external_field_double.cu /
 // external_field_float.cu; see the explicit-instantiation split. Every output

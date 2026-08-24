@@ -1,4 +1,4 @@
-// surface_geometry_impl.cuh — LCFS synthesis + derived-quantity kernels.
+// kernels/surface_geometry_impl.cuh — LCFS synthesis + derived-quantity kernels.
 //
 // Included once per scalar type by surface_geometry_double.cu /
 // surface_geometry_float.cu; see the explicit-instantiation split. Serial

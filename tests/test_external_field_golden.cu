@@ -37,11 +37,11 @@ using vfield::test::toHost;
 
 namespace {
 
-const std::string kDataDir = "tests/data/cth_like_free_bdy/";
+const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 std::string jsonPath(const std::string& checkpoint, int iter) {
     std::ostringstream oss;
-    oss << kDataDir << checkpoint << "/" << checkpoint << "_00015_"
+    oss << DATA_DIR << checkpoint << "/" << checkpoint << "_00015_"
         << std::setw(6) << std::setfill('0') << iter
         << "_01.cth_like_free_bdy.json";
     return oss.str();
@@ -69,7 +69,7 @@ void runIteration(int iter) {
 
     // cth_like_free_bdy: extcur = [4700, 1000] A (see the indata JSON).
     MgridProvider mgrid;
-    mgrid.loadFile(kDataDir + "../mgrid_cth_like.nc",
+    mgrid.loadFile(DATA_DIR + "../mgrid_cth_like.nc",
                    std::vector<double>{4700.0, 1000.0});
 
     FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);

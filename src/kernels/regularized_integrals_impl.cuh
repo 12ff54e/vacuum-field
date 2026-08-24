@@ -19,10 +19,10 @@ namespace vfield {
 
 namespace {
 
-constexpr int kBlockSize = 256;
+constexpr int BLOCK_SIZE = 256;
 
 inline int gridSize(int n) {
-    return (n + kBlockSize - 1) / kBlockSize;
+    return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 template <class KernelParams>
@@ -420,20 +420,20 @@ void RegularizedIntegralsOperator<T>::update(const T* d_bdotn) {
     if (p.axisymmetric) {
         launchChecked(
             reinterpret_cast<const void*>(&regularizedGreenpAxisymKernel<T>),
-            sizes_.nZnT * sizes_.nThetaEven, kBlockSize, p, stream_,
+            sizes_.nZnT * sizes_.nThetaEven, BLOCK_SIZE, p, stream_,
             "RegularizedIntegralsOperator::update: greenp (axisym)");
         launchChecked(
             reinterpret_cast<const void*>(&regularizedGstoreAxisymKernel<T>),
-            sizes_.nThetaEven, kBlockSize, p, stream_,
+            sizes_.nThetaEven, BLOCK_SIZE, p, stream_,
             "RegularizedIntegralsOperator::update: gstore (axisym)");
     } else {
         launchChecked(
             reinterpret_cast<const void*>(&regularizedGreenpKernel<T>),
-            sizes_.nZnT * sizes_.nThetaEven * sizes_.nZeta, kBlockSize, p,
+            sizes_.nZnT * sizes_.nThetaEven * sizes_.nZeta, BLOCK_SIZE, p,
             stream_, "RegularizedIntegralsOperator::update: greenp");
         launchChecked(
             reinterpret_cast<const void*>(&regularizedGstoreKernel<T>),
-            sizes_.nThetaEven * sizes_.nZeta, kBlockSize, p, stream_,
+            sizes_.nThetaEven * sizes_.nZeta, BLOCK_SIZE, p, stream_,
             "RegularizedIntegralsOperator::update: gstore");
     }
 }

@@ -20,10 +20,10 @@ namespace vfield {
 
 namespace {
 
-constexpr int kBlockSize = 256;
+constexpr int BLOCK_SIZE = 256;
 
 inline int gridSize(int n) {
-    return (n + kBlockSize - 1) / kBlockSize;
+    return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 template <class KernelParams>
@@ -180,29 +180,29 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
     // is then normalized to match the analytic T^{\pm}_0.
     //
     // rhs(l+1) = sqrtc2 + (-1)^{l+1}*sqrta2  (same for T^+ and T^-).
-    const int kL = p.mf + p.nf;
-    // The spurious solution is damped by (A/B)^kTailExtra per pass.
+    const int L = p.mf + p.nf;
+    // The spurious solution is damped by (A/B)^TAIL_EXTRA per pass.
     // For the worst realistic ratio (A/B ~ 0.5) suppression is ~0.5^50 ~
     // 1e-16.
-    const int kTailExtra = 50;
-    const int kLtail = kL + kTailExtra;
+    const int TAIL_EXTRA = 50;
+    const int L_TAIL = L + TAIL_EXTRA;
 
     // Only switch to backward when the forward spurious-mode growth
-    // (|r1 r2| = B/A) would actually exceed double precision over kL steps.
-    // Threshold: forward is considered stable as long as (B/A)^kL < 1e10,
+    // (|r1 r2| = B/A) would actually exceed double precision over L steps.
+    // Threshold: forward is considered stable as long as (B/A)^L < 1e10,
     // i.e. spurious amplitude stays within ~1e10 of the particular solution.
     // Near-degenerate kl (|r1|~|r2|~1) fall in the forward branch, where
     // zero-seed Miller is known to misconverge (spurious modes never damp).
-    // Formula: kL * ln(B/A) < ln(1e10) -> B/A < exp(ln(1e10)/kL).
-    constexpr double kLogGrowthThreshold = 10.0 * 2.30258509299;  // ln(1e10)
+    // Formula: L * ln(B/A) < ln(1e10) -> B/A < exp(ln(1e10)/L).
+    constexpr double LOG_GROWTH_THRESHOLD = 10.0 * 2.30258509299;  // ln(1e10)
     const T logRatioP = (am > ap && ap > T(0)) ? log(am / ap) : T(0);
     const bool useBackwardP =
-        static_cast<double>(kL) * static_cast<double>(logRatioP) >
-        kLogGrowthThreshold;
+        static_cast<double>(L) * static_cast<double>(logRatioP) >
+        LOG_GROWTH_THRESHOLD;
     const T logRatioM = (ap > am && am > T(0)) ? log(ap / am) : T(0);
     const bool useBackwardM =
-        static_cast<double>(kL) * static_cast<double>(logRatioM) >
-        kLogGrowthThreshold;
+        static_cast<double>(L) * static_cast<double>(logRatioM) >
+        LOG_GROWTH_THRESHOLD;
 
     // Miller seed: double keeps vmecpp's 1e-300; float needs a value above
     // the denormal range (1e-300 underflows float entirely).
@@ -220,22 +220,22 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
         // forward unstable -> use backward recurrence.
         T T_hi = 0;
         T T_cur = seed;
-        for (int l = kLtail; l >= 1; --l) {
+        for (int l = L_TAIL; l >= 1; --l) {
             const T rhs = sqrtc2 + (l % 2 == 0 ? T(-1) : T(1)) * sqrta2;
             const T T_lo =
                 (rhs - T(2 * l + 1) * d * T_cur - T(l + 1) * ap * T_hi) /
                 (T(l) * am);
             T_hi = T_cur;
             T_cur = T_lo;
-            if (l - 1 <= kL) { p.tlp[(l - 1) * p.nZnT + kl] = T_lo; }
+            if (l - 1 <= L) { p.tlp[(l - 1) * p.nZnT + kl] = T_lo; }
         }
         const T scaleP = T0p / p.tlp[kl];
-        for (int l = 0; l <= kL; ++l) { p.tlp[l * p.nZnT + kl] *= scaleP; }
+        for (int l = 0; l <= L; ++l) { p.tlp[l * p.nZnT + kl] *= scaleP; }
     } else {
         // forward stable.
         T T_prev = 0;  // T^+_{-1}
         int sgn = 1;
-        for (int fl = 0; fl < kL; ++fl) {
+        for (int fl = 0; fl < L; ++fl) {
             sgn = -sgn;
             const T rhs = sqrtc2 + T(sgn) * sqrta2;
             const T T_next =
@@ -253,22 +253,22 @@ __global__ void singularPrepareKernel(SingularKernelParams<T> p) {
         // forward unstable -> use backward recurrence.
         T T_hi = 0;
         T T_cur = seed;
-        for (int l = kLtail; l >= 1; --l) {
+        for (int l = L_TAIL; l >= 1; --l) {
             const T rhs = sqrtc2 + (l % 2 == 0 ? T(-1) : T(1)) * sqrta2;
             const T T_lo =
                 (rhs - T(2 * l + 1) * d * T_cur - T(l + 1) * am * T_hi) /
                 (T(l) * ap);
             T_hi = T_cur;
             T_cur = T_lo;
-            if (l - 1 <= kL) { p.tlm[(l - 1) * p.nZnT + kl] = T_lo; }
+            if (l - 1 <= L) { p.tlm[(l - 1) * p.nZnT + kl] = T_lo; }
         }
         const T scaleM = T0m / p.tlm[kl];
-        for (int l = 0; l <= kL; ++l) { p.tlm[l * p.nZnT + kl] *= scaleM; }
+        for (int l = 0; l <= L; ++l) { p.tlm[l * p.nZnT + kl] *= scaleM; }
     } else {
         // forward stable.
         T T_prev = 0;  // T^-_{-1}
         int sgn = 1;
-        for (int fl = 0; fl < kL; ++fl) {
+        for (int fl = 0; fl < L; ++fl) {
             sgn = -sgn;
             const T rhs = sqrtc2 + T(sgn) * sqrta2;
             const T T_next =
@@ -580,7 +580,7 @@ void SingularIntegralsOperator<T>::prepareUpdate(const T* d_a,
     p.grpmnCos = grpmn_cos_.data();
 
     launchChecked(reinterpret_cast<const void*>(&singularPrepareKernel<T>),
-                  sizes_.nZnT, kBlockSize, p, stream_,
+                  sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "SingularIntegralsOperator::prepareUpdate: prepare");
 }
 
@@ -630,11 +630,11 @@ void SingularIntegralsOperator<T>::performUpdate(const T* d_bdotn,
     p.grpmnCos = grpmn_cos_.data();
 
     launchChecked(reinterpret_cast<const void*>(&singularBvecKernel<T>),
-                  mnfull_, kBlockSize, p, stream_,
+                  mnfull_, BLOCK_SIZE, p, stream_,
                   "SingularIntegralsOperator::performUpdate: bvec");
     if (full_update) {
         launchChecked(reinterpret_cast<const void*>(&singularGrpmnKernel<T>),
-                      mnfull_ * sizes_.nZnT, kBlockSize, p, stream_,
+                      mnfull_ * sizes_.nZnT, BLOCK_SIZE, p, stream_,
                       "SingularIntegralsOperator::performUpdate: grpmn");
     }
 }

@@ -20,10 +20,10 @@ namespace vfield {
 
 namespace {
 
-constexpr int kBlockSize = 256;
+constexpr int BLOCK_SIZE = 256;
 
 inline int gridSize(int n) {
-    return (n + kBlockSize - 1) / kBlockSize;
+    return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 template <class KernelParams>
@@ -112,9 +112,9 @@ __global__ void greenpTransformPhaseAKernel(LaplaceKernelParams<T> p) {
         T g1e = 0;
         T g2e = 0;
         for (int k = 0; k < p.nZeta; ++k) {
-            const int kRev = (p.nZeta - k) % p.nZeta;
+            const int REV = (p.nZeta - k) % p.nZeta;
             const int kl = l * p.nZeta + k;
-            const int klRev = lRev * p.nZeta + kRev;
+            const int klRev = lRev * p.nZeta + REV;
             // 0.5 factor for even/odd decomposition
             const T kernel_odd =
                 (p.greenp[klp * full + kl] - p.greenp[klp * full + klRev]) *
@@ -212,8 +212,8 @@ __global__ void symmetriseGstoreKernel(LaplaceKernelParams<T> p) {
     const int l = kl / p.nZeta;
     const int k = kl - l * p.nZeta;
     const int lRev = (p.nThetaEven - l) % p.nThetaEven;
-    const int kRev = (p.nZeta - k) % p.nZeta;
-    const int klRev = lRev * p.nZeta + kRev;
+    const int REV = (p.nZeta - k) % p.nZeta;
+    const int klRev = lRev * p.nZeta + REV;
 
     // 1/2 for even/odd decomposition
     p.gstoreSymm[kl] = (p.gstore[kl] - p.gstore[klRev]) * T(0.5);
@@ -470,11 +470,11 @@ void LaplaceSolverOperator<T>::transformGreensFunctionDerivative(
 
     launchChecked(
         reinterpret_cast<const void*>(&greenpTransformPhaseAKernel<T>),
-        sizes_.nZnT * sizes_.nThetaReduced, kBlockSize, p, stream_,
+        sizes_.nZnT * sizes_.nThetaReduced, BLOCK_SIZE, p, stream_,
         "LaplaceSolverOperator: greenp transform phase A");
     launchChecked(
         reinterpret_cast<const void*>(&greenpTransformPhaseBKernel<T>),
-        sizes_.nZnT * (mf_ + 1), kBlockSize, p, stream_,
+        sizes_.nZnT * (mf_ + 1), BLOCK_SIZE, p, stream_,
         "LaplaceSolverOperator: greenp transform phase B");
 }
 
@@ -517,7 +517,7 @@ void LaplaceSolverOperator<T>::symmetriseSourceTerm(const T* d_gstore) {
     p.bvec = nullptr;
 
     launchChecked(reinterpret_cast<const void*>(&symmetriseGstoreKernel<T>),
-                  sizes_.nThetaReduced * sizes_.nZeta, kBlockSize, p, stream_,
+                  sizes_.nThetaReduced * sizes_.nZeta, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: symmetrise source");
 }
 
@@ -561,7 +561,7 @@ void LaplaceSolverOperator<T>::accumulateFullGrpmn(const T* d_singular_sin,
     p.bvec = nullptr;
 
     launchChecked(reinterpret_cast<const void*>(&accumulateFullGrpmnKernel<T>),
-                  mnpd_ * sizes_.nZnT, kBlockSize, p, stream_,
+                  mnpd_ * sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: accumulate grpmn");
 }
 
@@ -604,10 +604,10 @@ void LaplaceSolverOperator<T>::performToroidalFourierTransforms() {
     p.bvec = nullptr;
 
     launchChecked(reinterpret_cast<const void*>(&toroidalFftPhaseAKernel<T>),
-                  (nf_ + 1) * sizes_.nThetaReduced, kBlockSize, p, stream_,
+                  (nf_ + 1) * sizes_.nThetaReduced, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: toroidal phase A");
     launchChecked(reinterpret_cast<const void*>(&toroidalFftPhaseBKernel<T>),
-                  mnpd_ * (nf_ + 1) * sizes_.nThetaEff, kBlockSize, p, stream_,
+                  mnpd_ * (nf_ + 1) * sizes_.nThetaEff, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: toroidal phase B");
 }
 
@@ -650,10 +650,10 @@ void LaplaceSolverOperator<T>::performPoloidalFourierTransforms() {
     p.bvec = nullptr;
 
     launchChecked(reinterpret_cast<const void*>(&poloidalFftBvecKernel<T>),
-                  mnpd_, kBlockSize, p, stream_,
+                  mnpd_, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: poloidal bvec");
     launchChecked(reinterpret_cast<const void*>(&poloidalFftAmatKernel<T>),
-                  mnpd_ * mnpd_, kBlockSize, p, stream_,
+                  mnpd_ * mnpd_, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: poloidal amat");
 }
 
@@ -696,13 +696,13 @@ void LaplaceSolverOperator<T>::buildMatrix() {
     p.bvec = nullptr;
 
     launchChecked(reinterpret_cast<const void*>(&buildMatrixCopyKernel<T>),
-                  mnpd_ * mnpd_, kBlockSize, p, stream_,
+                  mnpd_ * mnpd_, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: matrix copy");
     launchChecked(reinterpret_cast<const void*>(&buildMatrixGaugeKernel<T>),
-                  mnpd_, kBlockSize, p, stream_,
+                  mnpd_, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: matrix gauge");
     launchChecked(reinterpret_cast<const void*>(&buildMatrixDiagonalKernel<T>),
-                  mnpd_, kBlockSize, p, stream_,
+                  mnpd_, BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: matrix diagonal");
 }
 
@@ -761,11 +761,11 @@ void LaplaceSolverOperator<T>::solveForPotential(const T* d_singular_bvec) {
     p.bvec = bvec_.data();
 
     launchChecked(reinterpret_cast<const void*>(&assembleBvecKernel<T>), mnpd_,
-                  kBlockSize, p, stream_,
+                  BLOCK_SIZE, p, stream_,
                   "LaplaceSolverOperator: assemble bvec");
     if (nf_ > 0) {
         launchChecked(reinterpret_cast<const void*>(&gaugeBvecKernel<T>), nf_,
-                      kBlockSize, p, stream_,
+                      BLOCK_SIZE, p, stream_,
                       "LaplaceSolverOperator: gauge bvec");
     }
 

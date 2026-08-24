@@ -34,7 +34,7 @@ FourierBasis::FourierBasis(const Sizes& sizes) : sizes_(sizes) {
 }
 
 void FourierBasis::computeFourierBasis(int nfp) {
-    static constexpr double kTwoPi = 2.0 * std::numbers::pi;
+    static constexpr double TWO_PI = 2.0 * std::numbers::pi;
 
     // Fourier transforms are always computed in VMEC
     // over the reduced theta interval from [0, pi].
@@ -58,7 +58,7 @@ void FourierBasis::computeFourierBasis(int nfp) {
     for (int m = 0; m < sizes_.mnyq2 + 1; ++m) {
         for (int l = 0; l < sizes_.nThetaReduced; ++l) {
             // need to compute theta grid using _full_ number of theta points!
-            const double theta = kTwoPi * l / sizes_.nThetaEven;
+            const double theta = TWO_PI * l / sizes_.nThetaEven;
             const int idx_ml = poloidalBasisIndex(m, l, sizes_.mnyq2 + 1);
 
             const double arg = m * theta;
@@ -95,7 +95,7 @@ void FourierBasis::computeFourierBasis(int nfp) {
     }  // n
 
     for (int k = 0; k < sizes_.nZeta; ++k) {
-        const double zeta = kTwoPi * k / sizes_.nZeta;
+        const double zeta = TWO_PI * k / sizes_.nZeta;
         for (int n = 0; n < sizes_.nnyq2 + 1; ++n) {
             const int idx_kn = toroidalBasisIndex(n, k, sizes_.nZeta);
 

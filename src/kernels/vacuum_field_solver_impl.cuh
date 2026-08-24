@@ -18,10 +18,10 @@ namespace vfield {
 
 namespace {
 
-constexpr int kBlockSize = 256;
+constexpr int BLOCK_SIZE = 256;
 
 inline int gridSize(int n) {
-    return (n + kBlockSize - 1) / kBlockSize;
+    return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 template <class KernelParams>
@@ -302,15 +302,15 @@ void VacuumFieldSolver<T>::update(const T* d_rcc,
     p.surfaceIntegrals = surface_integrals_.data();
 
     launchChecked(reinterpret_cast<const void*>(&potentialReconstructKernel<T>),
-                  sizes_.nZnT, kBlockSize, p, stream_,
+                  sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "VacuumFieldSolver::update: potential reconstruction");
     launchChecked(reinterpret_cast<const void*>(&bsubKernel<T>), sizes_.nZnT,
-                  kBlockSize, p, stream_, "VacuumFieldSolver::update: bsub");
+                  BLOCK_SIZE, p, stream_, "VacuumFieldSolver::update: bsub");
     launchChecked(reinterpret_cast<const void*>(&bsubSurfIntegralKernel<T>), 1,
                   1, p, stream_,
                   "VacuumFieldSolver::update: surface integrals");
     launchChecked(reinterpret_cast<const void*>(&bsqVacKernel<T>), sizes_.nZnT,
-                  kBlockSize, p, stream_, "VacuumFieldSolver::update: bsqvac");
+                  BLOCK_SIZE, p, stream_, "VacuumFieldSolver::update: bsqvac");
 
     // Download the surface-integral scalars (host out-parameters).
     T integrals[2];

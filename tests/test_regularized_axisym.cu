@@ -29,19 +29,19 @@ using vfield::test::toHost;
 
 namespace {
 
-constexpr int kNfp = 1;
-constexpr int kMpol = 4;
-constexpr int kNtor = 0;  // axisymmetric
-constexpr int kNtheta = 24;
-constexpr int kNzeta = 1;  // single toroidal plane -> nvper = 64 path
-constexpr int kSignJ = -1;
+constexpr int NFP = 1;
+constexpr int MPOL = 4;
+constexpr int NTOR = 0;  // axisymmetric
+constexpr int NTHETA = 24;
+constexpr int NZETA = 1;  // single toroidal plane -> nvper = 64 path
+constexpr int SIGN_J = -1;
 
 void makeCoefficients(std::vector<double>* rcc, std::vector<double>* zsc) {
-    const int mnsize = kMpol * (kNtor + 1);
+    const int mnsize = MPOL * (NTOR + 1);
     rcc->assign(mnsize, 0.0);
     zsc->assign(mnsize, 0.0);
     double phase = 0.0;
-    for (int m = 0; m < kMpol; ++m) {
+    for (int m = 0; m < MPOL; ++m) {
         phase += 0.63;
         (*rcc)[m] = 0.8 + 0.06 * (m + 1) * std::cos(phase);
         (*zsc)[m] = 0.5 * std::sin(phase) + 0.04 * m;
@@ -159,7 +159,7 @@ std::vector<double> asDouble(const std::vector<T>& v) {
 
 template <class T>
 void runPrecision(double tol) {
-    Sizes sizes(false, kNfp, kMpol, kNtor, kNtheta, kNzeta);
+    Sizes sizes(false, NFP, MPOL, NTOR, NTHETA, NZETA);
     FourierBasis fb(sizes);
     FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<T> sg(sizes, fbd);
@@ -178,7 +178,7 @@ void runPrecision(double tol) {
     auto d_zero = toDevice(zero_t);
 
     sg.update(d_rcc.data(), d_zero.data(), nullptr, nullptr, d_zsc.data(),
-              d_zero.data(), nullptr, nullptr, kSignJ, true);
+              d_zero.data(), nullptr, nullptr, SIGN_J, true);
 
     // Fabricate a smooth bDotN (any input works: the operator is linear in
     // it).

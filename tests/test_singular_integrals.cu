@@ -4,8 +4,8 @@
 // synthetic CONSTANT geometry (a=0.8, b2=-1.3, c=1.2, so am/ap ~ 4.7) and the
 // resulting T tables are compared per point against 64-point Gauss-Legendre
 // quadrature of the defining integral. Two (mpol, ntor) resolutions cover
-// the forward-stable regime (kL small) and the Miller backward branch
-// (kL large enough that forward would lose > 10 digits).
+// the forward-stable regime (L small) and the Miller backward branch
+// (L large enough that forward would lose > 10 digits).
 #include "vfield/common/fourier_basis.hpp"
 #include "vfield/common/fourier_basis_device.cuh"
 #include "vfield/common/sizes.hpp"
@@ -31,8 +31,8 @@ using vfield::test::toHost;
 namespace {
 
 // 64-point Gauss-Legendre quadrature on [-1, 1], {weight, abscissa} pairs.
-constexpr int kGLNodes = 64;
-constexpr std::array<std::array<double, 2>, kGLNodes> kGaussLegendre64 = {{
+constexpr int GL_NODES = 64;
+constexpr std::array<std::array<double, 2>, GL_NODES> GAUSS_LEGENDRE_64 = {{
     {0.0486909570091397, -0.0243502926634244},
     {0.0486909570091397, 0.0243502926634244},
     {0.0485754674415034, -0.0729931217877990},
@@ -106,7 +106,7 @@ constexpr std::array<std::array<double, 2>, kGLNodes> kGaussLegendre64 = {{
 // d^2 - ap*am < 0, i.e. b2 != 0).
 double tlpReference(int l, double ap, double am, double d) {
     double sum = 0.0;
-    for (const auto& [w, t] : kGaussLegendre64) {
+    for (const auto& [w, t] : GAUSS_LEGENDRE_64) {
         const double tl = std::pow(t, l);
         const double radicand = am + 2.0 * d * t + ap * t * t;
         sum += w * tl / std::sqrt(radicand);
@@ -117,7 +117,7 @@ double tlpReference(int l, double ap, double am, double d) {
 double tlmReference(int l, double ap, double am, double d) {
     // T^-_l swaps ap <-> am in the radicand.
     double sum = 0.0;
-    for (const auto& [w, t] : kGaussLegendre64) {
+    for (const auto& [w, t] : GAUSS_LEGENDRE_64) {
         const double tl = std::pow(t, l);
         const double radicand = ap + 2.0 * d * t + am * t * t;
         sum += w * tl / std::sqrt(radicand);
@@ -147,14 +147,14 @@ void runResolution(int mpol,
 
     const int nf = ntor;
     const int mf = mpol + 1;
-    const int kL = mf + nf;
+    const int L = mf + nf;
 
     // The vmecpp coefficients (0.8, -1.3, 1.2) give am/ap ~ 4.7 and the
     // discriminant d^2 - ap*am < 0 (smooth integrand); the forward
-    // recurrence loses ~kL * log10(am/ap) digits and the Miller branch
+    // recurrence loses ~L * log10(am/ap) digits and the Miller branch
     // fires when > 10 digits would be lost. Float runs use near-degenerate
     // coefficients instead (the vmecpp geometry would lose ~6 of float's 7
-    // digits already at kL=9).
+    // digits already at L=9).
     const double ap = a_val + b2_val + c_val;
     const double am = a_val - b2_val + c_val;
     const double d = c_val - a_val;
@@ -173,11 +173,11 @@ void runResolution(int mpol,
     si.prepareUpdate(d_a.data(), d_b2.data(), d_c.data(), d_zero.data(),
                      d_zero.data(), d_zero.data(), false);
 
-    const auto tlp = toHost(si.tlp(), (kL + 2) * sizes.nZnT);
-    const auto tlm = toHost(si.tlm(), (kL + 2) * sizes.nZnT);
+    const auto tlp = toHost(si.tlp(), (L + 2) * sizes.nZnT);
+    const auto tlm = toHost(si.tlm(), (L + 2) * sizes.nZnT);
 
     bool ok = true;
-    for (int l = 0; l <= kL; ++l) {
+    for (int l = 0; l <= L; ++l) {
         const double Tp_ref = tlpReference(l, ap, am, d);
         const double Tm_ref = tlmReference(l, ap, am, d);
         for (int kl = 0; kl < sizes.nZnT; ++kl) {
@@ -196,20 +196,20 @@ void runResolution(int mpol,
     const std::string label =
         std::string("T recurrences vs Gauss-Legendre (mpol=") +
         std::to_string(mpol) + ", ntor=" + std::to_string(ntor) +
-        ", kL=" + std::to_string(kL) + ")";
+        ", L=" + std::to_string(L) + ")";
     check(ok, label);
 }
 
 }  // namespace
 
 int main() {
-    // kL=9: forward recurrence is accurate (forward branch).
+    // L=9: forward recurrence is accurate (forward branch).
     runResolution<double>(4, 4, 0.8, -1.3, 1.2, 1e-11);
-    // kL=17: the Miller backward branch fires (forward would lose > 10
+    // L=17: the Miller backward branch fires (forward would lose > 10
     // digits).
     runResolution<double>(8, 8, 0.8, -1.3, 1.2, 1e-11);
     // Float: near-degenerate coefficients (the vmecpp geometry loses ~6 of
-    // float's 7 digits already at kL=9) and a relaxed tolerance.
+    // float's 7 digits already at L=9) and a relaxed tolerance.
     runResolution<float>(4, 4, 0.8, 0.1, 1.2, 1e-5);
     runResolution<float>(8, 8, 0.8, 0.1, 1.2, 1e-5);
     return summary();

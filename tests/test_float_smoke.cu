@@ -29,7 +29,7 @@ using vfield::test::toHost;
 
 namespace {
 
-const std::string kDataDir = "tests/data/cth_like_free_bdy/";
+const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 // Runs one iteration (full update) at precision T and returns the outputs.
 template <class T>
@@ -52,7 +52,7 @@ void runCase(int iter,
              std::vector<T>* pot) {
     typename VacuumFieldSolver<T>::Params params(sizes);
     params.coil_currents = {4700.0, 1000.0};
-    params.mgrid_file = kDataDir + "../mgrid_cth_like.nc";
+    params.mgrid_file = DATA_DIR + "../mgrid_cth_like.nc";
     VacuumFieldSolver<T> solver(params);
 
     std::vector<T> rcc_t(rcc.begin(), rcc.end());
@@ -88,7 +88,7 @@ void runCase(int iter,
 
 int main() {
     const json::Value vacuum = loadGolden(
-        kDataDir +
+        DATA_DIR +
         "vac1n_vacuum/vac1n_vacuum_00015_000053_01.cth_like_free_bdy.json");
     const int sign_j =
         static_cast<int>(static_cast<double>(vacuum.at("signgs")));

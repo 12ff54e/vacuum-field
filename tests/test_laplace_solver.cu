@@ -68,14 +68,14 @@ void runCase(bool lasym, int m0, int n0, double tol) {
     // Expected: the basis normalization makes the trapezoidal DFT of sin^2 /
     // cos^2 yield 0.5 per mode at the injected (m0, +n0) slot.
     const int idx_posn = (nf + n0) * (mf + 1) + m0;
-    constexpr double kExpected = 0.5;
+    constexpr double EXPECTED = 0.5;
 
     bool ok = true;
     if (!lasym) {
         const auto grpmn = toHost(ls.grpmnSin(), mnpd * sizes.nZnT);
         for (int klpRel = 0; klpRel < sizes.nZnT; ++klpRel) {
             if (!is_close_rel_abs(
-                    kExpected,
+                    EXPECTED,
                     static_cast<double>(grpmn[idx_posn * sizes.nZnT + klpRel]),
                     tol)) {
                 ok = false;
@@ -99,7 +99,7 @@ void runCase(bool lasym, int m0, int n0, double tol) {
         const auto grpmn = toHost(ls.grpmnCos(), mnpd * sizes.nZnT);
         for (int klpRel = 0; klpRel < sizes.nZnT; ++klpRel) {
             if (!is_close_rel_abs(
-                    kExpected,
+                    EXPECTED,
                     static_cast<double>(grpmn[idx_posn * sizes.nZnT + klpRel]),
                     tol)) {
                 ok = false;

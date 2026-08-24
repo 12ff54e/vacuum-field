@@ -32,18 +32,18 @@ using vfield::test::toHost;
 
 namespace {
 
-const std::string kDataDir = "tests/data/cth_like_free_bdy/";
+const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 std::string vacuumPath(int iter) {
     std::ostringstream oss;
-    oss << kDataDir << "vac1n_vacuum/vac1n_vacuum_00015_" << std::setw(6)
+    oss << DATA_DIR << "vac1n_vacuum/vac1n_vacuum_00015_" << std::setw(6)
         << std::setfill('0') << iter << "_01.cth_like_free_bdy.json";
     return oss.str();
 }
 
 std::string surfacePath(int iter) {
     std::ostringstream oss;
-    oss << kDataDir << "vac1n_surface/vac1n_surface_00015_" << std::setw(6)
+    oss << DATA_DIR << "vac1n_surface/vac1n_surface_00015_" << std::setw(6)
         << std::setfill('0') << iter << "_01.cth_like_free_bdy.json";
     return oss.str();
 }

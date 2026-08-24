@@ -32,11 +32,11 @@ using vfield::test::toHost;
 
 namespace {
 
-const std::string kDataDir = "tests/data/cth_like_free_bdy/";
+const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 std::string jsonPath(const std::string& checkpoint, int iter) {
     std::ostringstream oss;
-    oss << kDataDir << checkpoint << "/" << checkpoint << "_00015_"
+    oss << DATA_DIR << checkpoint << "/" << checkpoint << "_00015_"
         << std::setw(6) << std::setfill('0') << iter
         << "_01.cth_like_free_bdy.json";
     return oss.str();
@@ -135,7 +135,7 @@ int main() {
     Sizes sizes(false, 5, 5, 4, 16, 36);
     VacuumFieldSolver<double>::Params params(sizes);
     params.coil_currents = {4700.0, 1000.0};
-    params.mgrid_file = kDataDir + "../mgrid_cth_like.nc";
+    params.mgrid_file = DATA_DIR + "../mgrid_cth_like.nc";
     VacuumFieldSolver<double> solver(params);
 
     runIteration(53, solver, sizes);

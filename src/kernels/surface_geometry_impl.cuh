@@ -18,10 +18,10 @@ namespace vfield {
 
 namespace {
 
-constexpr int kBlockSize = 256;
+constexpr int BLOCK_SIZE = 256;
 
 inline int gridSize(int n) {
-    return (n + kBlockSize - 1) / kBlockSize;
+    return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 // Checked 1D launch of a kernel taking a single param struct by value.
@@ -318,9 +318,9 @@ __global__ void surfaceMirrorLasymSecondHalfKernel(SurfaceKernelParams<T> p) {
     const int l = 1 + idx / p.nZeta;
     const int k = idx - (l - 1) * p.nZeta;
     const int lRev = (p.nThetaEven - l) % p.nThetaEven;
-    const int kRev = (p.nZeta - k) % p.nZeta;
+    const int REV = (p.nZeta - k) % p.nZeta;
     const int kl = l * p.nZeta + k;
-    const int klRev = lRev * p.nZeta + kRev;
+    const int klRev = lRev * p.nZeta + REV;
 
     p.r1b[klRev] = p.r1b[kl] - p.r1bAsym[kl];
     p.z1b[klRev] = -p.z1b[kl] + p.z1bAsym[kl];
@@ -418,9 +418,9 @@ __global__ void surfaceMirrorSymmetricKernel(SurfaceKernelParams<T> p) {
     const int l = 1 + idx / p.nZeta;
     const int k = idx - (l - 1) * p.nZeta;
     const int lRev = (p.nThetaEven - l) % p.nThetaEven;
-    const int kRev = (p.nZeta - k) % p.nZeta;
+    const int REV = (p.nZeta - k) % p.nZeta;
     const int kl = l * p.nZeta + k;
-    const int klRev = lRev * p.nZeta + kRev;
+    const int klRev = lRev * p.nZeta + REV;
 
     p.r1b[klRev] = p.r1b[kl];
     p.z1b[klRev] = -p.z1b[kl];
@@ -598,33 +598,33 @@ void SurfaceGeometryOperator<T>::update(const T* d_rcc,
     const int nMirror = (sizes_.nThetaReduced - 2) * sizes_.nZeta;
 
     launchChecked(reinterpret_cast<const void*>(&surfaceSynthesisKernel<T>),
-                  nReduced, kBlockSize, p, stream_,
+                  nReduced, BLOCK_SIZE, p, stream_,
                   "SurfaceGeometryOperator::update: synthesis");
     if (sizes_.lasym) {
         launchChecked(reinterpret_cast<const void*>(
                           &surfaceMirrorLasymSecondHalfKernel<T>),
-                      nMirror, kBlockSize, p, stream_,
+                      nMirror, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: lasym second half");
         launchChecked(reinterpret_cast<const void*>(
                           &surfaceCombineLasymFirstHalfKernel<T>),
-                      nReduced, kBlockSize, p, stream_,
+                      nReduced, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: lasym first half");
     }
     launchChecked(reinterpret_cast<const void*>(&surfaceDerivedKernel<T>),
-                  sizes_.nZnT, kBlockSize, p, stream_,
+                  sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "SurfaceGeometryOperator::update: derived");
     if (full_update) {
         launchChecked(reinterpret_cast<const void*>(&surfaceRzb2Kernel<T>),
-                      sizes_.nZnT, kBlockSize, p, stream_,
+                      sizes_.nZnT, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: rzb2");
         if (!sizes_.lasym) {
             launchChecked(
                 reinterpret_cast<const void*>(&surfaceMirrorSymmetricKernel<T>),
-                nMirror, kBlockSize, p, stream_,
+                nMirror, BLOCK_SIZE, p, stream_,
                 "SurfaceGeometryOperator::update: symmetric mirror");
         }
         launchChecked(reinterpret_cast<const void*>(&surfaceRcosuvKernel<T>),
-                      sizes_.nThetaEven * sizes_.nZeta, kBlockSize, p, stream_,
+                      sizes_.nThetaEven * sizes_.nZeta, BLOCK_SIZE, p, stream_,
                       "SurfaceGeometryOperator::update: rcosuv");
     }
 }

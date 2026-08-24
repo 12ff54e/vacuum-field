@@ -29,28 +29,28 @@ using vfield::test::toHost;
 
 namespace {
 
-constexpr int kNfp = 5;
-constexpr int kMpol = 5;
-constexpr int kNtor = 4;
-constexpr int kNtheta = 16;
-constexpr int kNzeta = 36;
-constexpr int kSignJ = -1;
+constexpr int NFP = 5;
+constexpr int MPOL = 5;
+constexpr int NTOR = 4;
+constexpr int NTHETA = 16;
+constexpr int NZETA = 36;
+constexpr int SIGN_J = -1;
 // The axis-current drive (A); any nonzero value works.
-constexpr double kAxisCurrent = 1.0e6;
+constexpr double AXIS_CURRENT = 1.0e6;
 
 void makeCoefficients(std::vector<double>* rcc,
                       std::vector<double>* rss,
                       std::vector<double>* zsc,
                       std::vector<double>* zcs) {
-    const int mnsize = kMpol * (kNtor + 1);
+    const int mnsize = MPOL * (NTOR + 1);
     rcc->assign(mnsize, 0.0);
     rss->assign(mnsize, 0.0);
     zsc->assign(mnsize, 0.0);
     zcs->assign(mnsize, 0.0);
     double phase = 0.0;
-    for (int n = 0; n <= kNtor; ++n) {
-        for (int m = 0; m < kMpol; ++m) {
-            const int idx = n * kMpol + m;
+    for (int n = 0; n <= NTOR; ++n) {
+        for (int m = 0; m < MPOL; ++m) {
+            const int idx = n * MPOL + m;
             phase += 0.37;
             (*rcc)[idx] = 0.9 + 0.03 * (m + 1) * std::cos(phase) + 0.01 * n;
             (*rss)[idx] = 0.05 * std::sin(phase * 2.0) + 0.02 * m;
@@ -97,13 +97,13 @@ Outputs runPipeline(const Sizes& sizes,
     if (sizes.lasym) {
         solver.update(d_rcc.data(), d_rss.data(), d_zero.data(), d_zero.data(),
                       d_zsc.data(), d_zcs.data(), d_zero.data(), d_zero.data(),
-                      kSignJ, d_raxis.data(), d_zaxis.data(), &bsubu_vac,
-                      &bsubv_vac, kAxisCurrent, true);
+                      SIGN_J, d_raxis.data(), d_zaxis.data(), &bsubu_vac,
+                      &bsubv_vac, AXIS_CURRENT, true);
     } else {
         solver.update(d_rcc.data(), d_rss.data(), nullptr, nullptr,
-                      d_zsc.data(), d_zcs.data(), nullptr, nullptr, kSignJ,
+                      d_zsc.data(), d_zcs.data(), nullptr, nullptr, SIGN_J,
                       d_raxis.data(), d_zaxis.data(), &bsubu_vac, &bsubv_vac,
-                      kAxisCurrent, true);
+                      AXIS_CURRENT, true);
     }
 
     Outputs out;
@@ -128,17 +128,17 @@ Outputs runPipeline(const Sizes& sizes,
 int main() {
     std::vector<double> rcc, rss, zsc, zcs;
     makeCoefficients(&rcc, &rss, &zsc, &zcs);
-    std::vector<double> raxis(kNzeta), zaxis(kNzeta);
-    for (int k = 0; k < kNzeta; ++k) {
-        raxis[k] = 0.6 + 0.02 * std::cos(2.0 * std::numbers::pi * k / kNzeta);
-        zaxis[k] = 0.1 * std::sin(2.0 * std::numbers::pi * k / kNzeta);
+    std::vector<double> raxis(NZETA), zaxis(NZETA);
+    for (int k = 0; k < NZETA; ++k) {
+        raxis[k] = 0.6 + 0.02 * std::cos(2.0 * std::numbers::pi * k / NZETA);
+        zaxis[k] = 0.1 * std::sin(2.0 * std::numbers::pi * k / NZETA);
     }
 
-    Sizes sizes_sym(false, kNfp, kMpol, kNtor, kNtheta, kNzeta);
+    Sizes sizes_sym(false, NFP, MPOL, NTOR, NTHETA, NZETA);
     const Outputs sym =
         runPipeline(sizes_sym, rcc, rss, zsc, zcs, raxis, zaxis);
 
-    Sizes sizes_asym(true, kNfp, kMpol, kNtor, kNtheta, kNzeta);
+    Sizes sizes_asym(true, NFP, MPOL, NTOR, NTHETA, NZETA);
     const Outputs asym =
         runPipeline(sizes_asym, rcc, rss, zsc, zcs, raxis, zaxis);
 

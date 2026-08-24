@@ -7,7 +7,7 @@
 // (factor 1e-7 * 2 * I, Eq. (8) of Hanson & Hirshman 2002), and the covariant
 // (bSubU/bSubV) and normal (bDotN, with the minus sign) components. Serial
 // over the whole grid. The abscab path is dropped
-// (kUseAbscabForAxisCurrent == false in vmecpp).
+// (USE_ABSCAB_FOR_AXIS_CURRENT == false in vmecpp).
 #ifndef VFIELD_FREE_BOUNDARY_EXTERNAL_FIELD_OPERATOR_HPP_
 #define VFIELD_FREE_BOUNDARY_EXTERNAL_FIELD_OPERATOR_HPP_
 

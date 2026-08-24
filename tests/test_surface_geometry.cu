@@ -27,27 +27,27 @@ using vfield::test::toHost;
 
 namespace {
 
-constexpr int kNfp = 5;
-constexpr int kMpol = 5;
-constexpr int kNtor = 4;
-constexpr int kNtheta = 16;
-constexpr int kNzeta = 36;
-constexpr int kSignJ = -1;
+constexpr int NFP = 5;
+constexpr int MPOL = 5;
+constexpr int NTOR = 4;
+constexpr int NTHETA = 16;
+constexpr int NZETA = 36;
+constexpr int SIGN_J = -1;
 
 // Synthetic boundary coefficients with every (m,n) slot occupied.
 void makeCoefficients(std::vector<double>* rcc,
                       std::vector<double>* rss,
                       std::vector<double>* zsc,
                       std::vector<double>* zcs) {
-    const int mnsize = kMpol * (kNtor + 1);
+    const int mnsize = MPOL * (NTOR + 1);
     rcc->assign(mnsize, 0.0);
     rss->assign(mnsize, 0.0);
     zsc->assign(mnsize, 0.0);
     zcs->assign(mnsize, 0.0);
     double phase = 0.0;
-    for (int n = 0; n <= kNtor; ++n) {
-        for (int m = 0; m < kMpol; ++m) {
-            const int idx = n * kMpol + m;
+    for (int n = 0; n <= NTOR; ++n) {
+        for (int m = 0; m < MPOL; ++m) {
+            const int idx = n * MPOL + m;
             phase += 0.37;
             (*rcc)[idx] = 0.9 + 0.03 * (m + 1) * std::cos(phase) + 0.01 * n;
             (*rss)[idx] = 0.05 * std::sin(phase * 2.0) + 0.02 * m;
@@ -171,7 +171,7 @@ CpuSurface cpuReference(const std::vector<double>& rcc,
             const double rp = out.rvb[kl];
             const double zt = out.zub[kl];
             const double zp = out.zvb[kl];
-            const double sign_j = kSignJ;
+            const double sign_j = SIGN_J;
 
             const double snr = sign_j * r * zt;
             const double snv = sign_j * (rt * zp - zt * rp);
@@ -206,7 +206,7 @@ CpuSurface cpuReference(const std::vector<double>& rcc,
 
 template <class T>
 void runPrecision(double tol) {
-    Sizes sizes(false, kNfp, kMpol, kNtor, kNtheta, kNzeta);
+    Sizes sizes(false, NFP, MPOL, NTOR, NTHETA, NZETA);
     FourierBasis fb(sizes);
     FourierBasisDevice<T> fbd(fb, sizes.lasym, sizes.nThetaEven);
     SurfaceGeometryOperator<T> sg(sizes, fbd);
@@ -224,7 +224,7 @@ void runPrecision(double tol) {
     auto d_zcs = toDevice(zcs_t);
 
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
-              d_zcs.data(), nullptr, nullptr, kSignJ, true);
+              d_zcs.data(), nullptr, nullptr, SIGN_J, true);
 
     const CpuSurface ref = cpuReference(rcc, rss, zsc, zcs, sizes);
     const int n_full = sizes.nThetaEven * sizes.nZeta;
@@ -261,7 +261,7 @@ void runPrecision(double tol) {
 
     // Also exercise the no-full-update path (first derivatives only).
     sg.update(d_rcc.data(), d_rss.data(), nullptr, nullptr, d_zsc.data(),
-              d_zcs.data(), nullptr, nullptr, kSignJ, false);
+              d_zcs.data(), nullptr, nullptr, SIGN_J, false);
     check(max_rel_diff(toHost(sg.rub(), sizes.nZnT), ref.rub) < tol,
           "rub (no full update)");
     check(max_rel_diff(toHost(sg.guv(), sizes.nZnT), ref.guv) < tol,

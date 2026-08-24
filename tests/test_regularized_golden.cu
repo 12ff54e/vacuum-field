@@ -36,18 +36,18 @@ using vfield::test::summary;
 using vfield::test::toDevice;
 using vfield::test::toHost;
 
-const std::string kDataDir = "tests/data/cth_like_free_bdy/";
+const std::string DATA_DIR = "tests/data/cth_like_free_bdy/";
 
 int main() {
     const int iter = 53;
     const json::Value vacuum = loadGolden(
-        kDataDir +
+        DATA_DIR +
         "vac1n_vacuum/vac1n_vacuum_00015_000053_01.cth_like_free_bdy.json");
     const json::Value greenf = loadGolden(
-        kDataDir +
+        DATA_DIR +
         "vac1n_greenf/vac1n_greenf_00015_000053_01.cth_like_free_bdy.json");
     const json::Value precal = loadGolden(
-        kDataDir +
+        DATA_DIR +
         "vac1n_precal/vac1n_precal_00015_000053_01.cth_like_free_bdy.json");
 
     const bool full_update =
@@ -66,7 +66,7 @@ int main() {
                  sizes.mpol);
 
     MgridProvider mgrid;
-    mgrid.loadFile(kDataDir + "../mgrid_cth_like.nc",
+    mgrid.loadFile(DATA_DIR + "../mgrid_cth_like.nc",
                    std::vector<double>{4700.0, 1000.0});
 
     FourierBasisDevice<double> fbd(fb, sizes.lasym, sizes.nThetaEven);

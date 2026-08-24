@@ -20,10 +20,10 @@ namespace vfield {
 
 namespace {
 
-constexpr int kBlockSize = 256;
+constexpr int BLOCK_SIZE = 256;
 
 inline int gridSize(int n) {
-    return (n + kBlockSize - 1) / kBlockSize;
+    return (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
 }
 
 // Checked 1D launch of a kernel taking a single param struct by value.
@@ -413,16 +413,16 @@ void ExternalFieldOperator<T>::update(const T* d_r_axis,
     check_cuda(cudaMemsetAsync(p.outOfBounds, 0, sizeof(int), stream_),
                "ExternalFieldOperator::update: flag reset");
     launchChecked(reinterpret_cast<const void*>(&mgridInterpKernel<T>),
-                  sizes_.nZnT, kBlockSize, p, stream_,
+                  sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "ExternalFieldOperator::update: mgrid interpolation");
     launchChecked(reinterpret_cast<const void*>(&axisXyzKernel<T>),
-                  sizes_.nZeta * nvper_ + 1, kBlockSize, p, stream_,
+                  sizes_.nZeta * nvper_ + 1, BLOCK_SIZE, p, stream_,
                   "ExternalFieldOperator::update: axis polygon");
     launchChecked(reinterpret_cast<const void*>(&axisCurrentKernel<T>),
-                  sizes_.nZnT, kBlockSize, p, stream_,
+                  sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "ExternalFieldOperator::update: axis current");
     launchChecked(reinterpret_cast<const void*>(&covariantAndNormalKernel<T>),
-                  sizes_.nZnT, kBlockSize, p, stream_,
+                  sizes_.nZnT, BLOCK_SIZE, p, stream_,
                   "ExternalFieldOperator::update: covariant/normal");
 
     // Out-of-bounds check for the grid-cropping warning (the flag copy

@@ -18,8 +18,8 @@ the plasma boundary consistent with the coil field:
 - covariant field components `b_sub_u`/`b_sub_v` (potential + external field);
 - vacuum magnetic pressure `b_sq_vac = |B|²/2` and cylindrical components
   `B_R`/`B_φ`/`B_Z` on the boundary;
-- the surface-integral scalars `b_sub_u_vac`/`b_sub_v_vac` (net toroidal / poloidal
-  current diagnostics).
+- the surface-integral scalars `b_sub_u_vac`/`b_sub_v_vac` (net toroidal /
+  poloidal current diagnostics).
 
 The singular kernel is split into an analytically integrable local
 approximation (closed-form one-dimensional recurrences) plus a regularized

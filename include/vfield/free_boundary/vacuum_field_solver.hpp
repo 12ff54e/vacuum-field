@@ -31,6 +31,7 @@ namespace vfield {
 template <class T>
 class VacuumFieldSolver {
    public:
+    using val_type = T;
     struct Params {
         explicit Params(const Sizes& sizes) : sizes(sizes) {}
 

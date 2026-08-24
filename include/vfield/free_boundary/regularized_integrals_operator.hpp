@@ -24,6 +24,7 @@ namespace vfield {
 template <class T>
 class RegularizedIntegralsOperator {
    public:
+    using val_type = T;
     RegularizedIntegralsOperator(const Sizes& sizes,
                                  const SurfaceGeometryOperator<T>& sg);
 

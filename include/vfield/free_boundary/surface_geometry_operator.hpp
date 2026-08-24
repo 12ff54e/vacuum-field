@@ -20,6 +20,7 @@ namespace vfield {
 template <class T>
 class SurfaceGeometryOperator {
    public:
+    using val_type = T;
     SurfaceGeometryOperator(const Sizes& sizes,
                             const FourierBasisDevice<T>& fb);
 

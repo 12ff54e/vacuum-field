@@ -21,6 +21,7 @@ namespace vfield {
 template <class T>
 class ExternalFieldOperator {
    public:
+    using val_type = T;
     ExternalFieldOperator(const Sizes& sizes,
                           const SurfaceGeometryOperator<T>& sg,
                           const MgridProvider& mgrid);

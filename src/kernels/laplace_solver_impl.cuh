@@ -53,6 +53,7 @@ void upload_converted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
 
 template <class T>
 struct LaplaceKernelParams {
+    using val_type = T;
     // Scaled basis tables.
     const T* cosnv_scaled;  // [(nf+1) * nZeta]
     const T* sinnv_scaled;

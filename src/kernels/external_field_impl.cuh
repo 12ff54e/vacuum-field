@@ -68,6 +68,7 @@ std::vector<T> to_host_t(const T* d, std::size_t n) {
 
 template <class T>
 struct ExternalKernelParams {
+    using val_type = T;
     // Surface geometry.
     const T* r1b;
     const T* z1b;

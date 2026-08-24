@@ -21,6 +21,7 @@ namespace vfield {
 template <class T>
 class DeviceBuffer {
    public:
+    using val_type = T;
     DeviceBuffer() = default;
 
     explicit DeviceBuffer(std::size_t count) { allocate(count); }

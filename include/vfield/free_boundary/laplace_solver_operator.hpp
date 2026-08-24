@@ -25,6 +25,7 @@ namespace vfield {
 template <class T>
 class LaplaceSolverOperator {
    public:
+    using val_type = T;
     LaplaceSolverOperator(const Sizes& sizes, const FourierBasisDevice<T>& fb);
 
     // The analysis pipeline (in vmecpp's order):

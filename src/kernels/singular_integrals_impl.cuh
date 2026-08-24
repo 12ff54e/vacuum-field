@@ -53,6 +53,7 @@ void upload_converted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
 
 template <class T>
 struct SingularKernelParams {
+    using val_type = T;
     // Local quadratic forms of the metric (a, b2, c) and second fundamental
     // form (A, B2, C); passed explicitly so the unit tests can feed
     // synthetic geometry (vmecpp's prepare_update signature).

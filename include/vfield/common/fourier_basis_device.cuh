@@ -17,6 +17,7 @@ namespace vfield {
 template <class T>
 class FourierBasisDevice {
    public:
+    using val_type = T;
     // Uploads the whole host basis. Called once at solver construction. The
     // host tables are double; convert to T explicitly — a raw cudaMemcpy
     // would reinterpret the doubles in float builds. For lasym the poloidal

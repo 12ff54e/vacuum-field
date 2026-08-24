@@ -51,6 +51,7 @@ void upload_converted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
 
 template <class T>
 struct DriverKernelParams {
+    using val_type = T;
     // Fourier basis (raw tables incl. the mscale/nscale normalization).
     const T* cosmu;
     const T* sinmu;

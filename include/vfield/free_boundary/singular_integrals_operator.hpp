@@ -24,6 +24,7 @@ namespace vfield {
 template <class T>
 class SingularIntegralsOperator {
    public:
+    using val_type = T;
     SingularIntegralsOperator(const Sizes& sizes,
                               const FourierBasisDevice<T>& fb,
                               const SurfaceGeometryOperator<T>& sg);

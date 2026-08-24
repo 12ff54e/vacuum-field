@@ -47,6 +47,7 @@ void launch_checked(const void* func,
 // launches readable).
 template <class T>
 struct SurfaceKernelParams {
+    using val_type = T;
     // LCFS Fourier coefficients (n-major, mnsize each; antisymmetric ones may
     // be nullptr when !lasym).
     const T* r_cc;

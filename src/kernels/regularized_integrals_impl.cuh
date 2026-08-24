@@ -52,6 +52,7 @@ void upload_converted(const std::vector<double>& src, DeviceBuffer<T>* dst) {
 
 template <class T>
 struct RegularizedKernelParams {
+    using val_type = T;
     // Surface geometry.
     const T* rzb2;
     const T* z1b;
